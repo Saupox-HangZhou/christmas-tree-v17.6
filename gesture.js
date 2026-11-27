@@ -7,7 +7,7 @@ export async function createHandTracker() {
   const modelAssetPath = new URL('hand_landmarker.task', visionBase).href;
   const options = {
     runningMode: 'VIDEO',
-    numHands: 1,
+    numHands: 2,
     minHandDetectionConfidence: 0.55,
     minHandPresenceConfidence: 0.55,
     minTrackingConfidence: 0.5
@@ -34,7 +34,7 @@ function alignment(a, b) {
 
 // Metric 3D coordinates make the tests independent of handedness and image rotation.
 // Wider release thresholds reject jitter without holding a new gesture for extra frames.
-export function classifyFingers(points, previous = []) {
+export function classifyFingers(points, previous = [], image, aspect = 1) {
   const handWidth = length(vector(points[5], points[17]));
   const distance = (a, b) => length(vector(points[a], points[b])) / Math.max(1e-6, handWidth);
   const acrossPalm = vector(points[17], points[5]);
@@ -45,20 +45,77 @@ export function classifyFingers(points, previous = []) {
     (thumbProjection > (previous[0] ? 0.26 : 0.34) ||
       (distance(4, 17) > (previous[0] ? 1.19 : 1.29) && distance(4, 9) > 0.83));
   const flags = [thumbOpen];
+  const projected = image?.map(p => ({ x: p.x * aspect, y: p.y, z: 0 }));
+  const palm = projected && Math.max(length(vector(projected[5], projected[17])), length(vector(projected[0], projected[9])) * 0.78);
   for (const base of [5, 9, 13, 17]) {
     const wasOpen = previous[flags.length];
     const proximal = vector(points[base], points[base + 1]);
     const distal = vector(points[base + 1], points[base + 3]);
     const straight = alignment(proximal, distal);
     const reach = distance(0, base + 3) - distance(0, base + 1);
-    flags.push(straight > (wasOpen ? 0.39 : 0.53) && reach > (wasOpen ? 0.06 : 0.12));
+    let open = straight > (wasOpen ? 0.39 : 0.53) && reach > (wasOpen ? 0.06 : 0.12);
+    // A foreshortened knuckle can distort inferred depth even with a clearly straight silhouette.
+    if (!open && palm > 1e-6) {
+      const proximal2D = vector(projected[base], projected[base + 1]);
+      const distal2D = vector(projected[base + 1], projected[base + 3]);
+      const reach2D = length(vector(projected[0], projected[base + 3])) - length(vector(projected[0], projected[base + 1]));
+      open = reach2D > palm * 0.25 && alignment(proximal2D, distal2D) > 0.91;
+    }
+    flags.push(open);
   }
   return flags;
 }
 
+function isPinching(image, world, aspect, wasPinching) {
+  const distance = (a, b) => Math.hypot((image[a].x - image[b].x) * aspect, image[a].y - image[b].y);
+  const palm = Math.max(distance(5, 17), distance(0, 9) * 0.78);
+  const width = length(vector(world[5], world[17]));
+  if (palm < 1e-6 || width < 1e-6) return false;
+  const gap = distance(4, 8) / palm;
+  const spatialGap = length(vector(world[4], world[8])) / width;
+  // Depth at the two touching fingertips is often ambiguous in a side view.
+  // Also check their image separation and whether the index bends back to the palm.
+  const bentIndex = distance(0, 8) < distance(0, 6) * (wasPinching ? 1.20 : 1.15);
+  return spatialGap < (wasPinching ? 0.42 : 0.30) ||
+    (bentIndex && gap < (wasPinching ? 0.46 : 0.33)) ||
+    (bentIndex && spatialGap < 0.78 && gap < (wasPinching ? 0.53 : 0.43));
+}
+
+// Histories follow wrist positions because the model can change the order of its hands.
+export function createPoseClassifier() {
+  let previous = [];
+  return function classifyHands(points, world, aspect = 1) {
+    const available = previous.slice();
+    const hands = [];
+    for (let i = 0; i < world.length; i++) {
+      if (points[i]?.length !== 21 || world[i]?.length !== 21) continue;
+      const wrist = points[i][0];
+      let nearest = -1, bestDistance = 0.24;
+      available.forEach((hand, index) => {
+        const distance = Math.hypot(hand.wrist.x - wrist.x, hand.wrist.y - wrist.y);
+        if (distance < bestDistance) { nearest = index; bestDistance = distance; }
+      });
+      const last = nearest >= 0 ? available.splice(nearest, 1)[0] : undefined;
+      const landmarks = world[i];
+      const flags = classifyFingers(landmarks, last?.flags, points[i], aspect);
+      const extended = flags.slice(2).filter(Boolean).length;
+      const ok = extended >= 2 && isPinching(points[i], landmarks, aspect, last?.ok);
+      if (ok) { flags[0] = false; flags[1] = false; }
+      hands.push({ wrist, flags, ok, count: flags.filter(Boolean).length });
+    }
+    previous = hands;
+    return {
+      handCount: hands.length,
+      count: hands.reduce((total, hand) => total + hand.count, 0),
+      ok: hands.some(hand => hand.ok),
+      openPalm: hands.some(hand => hand.count === 5)
+    };
+  };
+}
+
 // A classic worker is needed because the MediaPipe WASM loader uses importScripts.
 async function openWorker(signal) {
-  const worker = new Worker(new URL('./gesture-worker.js', import.meta.url));
+  const worker = new Worker(new URL('./gesture-worker.js?v=yyj-galaxy-1', import.meta.url));
   let pending;
   const wait = () => new Promise((resolve, reject) => { pending = { resolve, reject }; });
   const stop = () => {
@@ -103,17 +160,18 @@ async function openMainTracker(signal) {
   return {
     detect(video, timestamp) {
       const result = tracker.detectForVideo(video, timestamp);
-      return { points: result.landmarks[0], world: result.worldLandmarks[0] };
+      return { points: result.landmarks, world: result.worldLandmarks };
     },
     stop: () => tracker.close()
   };
 }
 
-export async function startGestureCamera(video, onCount, onStatus, onLandmarks = () => {}, externalSignal) {
+export async function startGestureCamera(video, onPose, onStatus, onLandmarks = () => {}, externalSignal) {
   const controller = new AbortController();
   const signal = controller.signal;
   let stream, engine, handle;
-  let busy = false, previous = [], lastCount, lastTime = -1;
+  let busy = false, previousPose, lastTime = -1;
+  const classifyHands = createPoseClassifier();
   let workerActive = false;
   const videoClock = typeof video.requestVideoFrameCallback === 'function';
   const stop = () => {
@@ -128,7 +186,7 @@ export async function startGestureCamera(video, onCount, onStatus, onLandmarks =
     engine?.stop();
     stream?.getTracks().forEach(track => track.stop());
     if (stream && video.srcObject === stream) video.srcObject = null;
-    if (lastCount != null) onCount(null);
+    if (previousPose?.handCount) onPose(null);
     onLandmarks([]);
   };
   const fail = status => { if (!signal.aborted) { stop(); onStatus(status); } };
@@ -173,10 +231,12 @@ export async function startGestureCamera(video, onCount, onStatus, onLandmarks =
       const result = await engine.detect(video, now);
       if (signal.aborted) return;
       const points = result.points || [];
-      const world = result.world;
-      previous = world?.length === 21 ? classifyFingers(world, previous) : [];
-      const count = previous.length ? previous.filter(Boolean).length : null;
-      if (count !== lastCount) { lastCount = count; onCount(count); }
+      const pose = classifyHands(points, result.world || [], video.videoWidth / video.videoHeight);
+      if (!previousPose || previousPose.handCount !== pose.handCount || previousPose.count !== pose.count ||
+          previousPose.ok !== pose.ok || previousPose.openPalm !== pose.openPalm) {
+        previousPose = pose;
+        onPose(pose);
+      }
       onLandmarks(points);
     } catch {
       if (!signal.aborted && workerActive) {
