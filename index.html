@@ -83,7 +83,8 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
 </main>
 <script type="module">
 const mountScene = (() => {
-// The same stars move between poses. The hand tracker and the scene have independent clocks.
+// All particle poses share one vertex buffer, so a gesture only changes three
+// interpolation weights. The hand tracker and the scene have independent clocks.
 const TAU = Math.PI * 2;
 const SKY_SPEED = TAU / 72;
 const COMET_PERIOD = 9;
@@ -93,8 +94,7 @@ const COMET_SAMPLES = 256;
 const COMET_COLORS = [[1,.65,.23],[.43,.94,.81],[1,.43,.52]];
 const PHOTO_SPEED = TAU / 24;
 const GALAXY_SPEED = TAU / 54;
-const DISK_SPEED = TAU / 65;
-const MODES = {tree: 0, photo: 1, galaxy: 2, spiral: 3};
+const MODES = {tree: 0, photo: 1, galaxy: 2};
 const STRIDE = 13;
 const PALETTE = [
     [1, .87, .60], [.98, .72, .34], [1, .95, .82], [.88, .49, .20],
@@ -192,37 +192,11 @@ function makeField(count) {
     return new Float32Array(data);
 }
 
-// Store disk coordinates once. Rotating this plane keeps the pictures and their spiral arms together.
-function makeSpiral(field) {
-    const disk = new Float32Array(field.length / STRIDE * 3);
-    let state=0x9ed31;
-    const random=() => {
-        state=(Math.imul(state,1664525)+1013904223)>>>0;
-        return state/4294967296;
-    };
-    for (let i=0,j=0; i<field.length; i+=STRIDE,j+=3) {
-        const kind=field[i+10], population=random(), u=random();
-        const isCore=population<.15 && kind<4, isHalo=population>.73;
-        const radius=isCore ? .21*u**.72 : isHalo ? 1.12*Math.sqrt(u) : .055+.94*u**.72;
-        const arm = (j/3)%3;
-        const scatter=(random()+random()+random()-1.5)*(.28+.46*radius);
-        const azimuth=isCore || isHalo ? TAU*random() : arm*TAU/3+2.9*radius+scatter;
-        disk[j]=radius*Math.cos(azimuth); disk[j+1]=radius*Math.sin(azimuth); disk[j+2]=radius;
-    }
-    return disk;
-}
-function diskMatrix(disk) {
-    const c=Math.cos(disk.angle), s=Math.sin(disk.angle);
-    const x=disk.radiusX, y=disk.radiusY, ct=Math.cos(disk.tilt), st=Math.sin(disk.tilt);
-    return [ct*x*c-st*y*s, st*x*c+ct*y*s, -ct*x*s-st*y*c, -st*x*s+ct*y*c];
-}
-
 const VERTEX = `
 attribute vec3 aTree;
 attribute vec3 aPhoto;
 attribute vec3 aGalaxy;
 attribute vec4 aSprite;
-attribute vec3 aDisk;
 uniform vec2 uViewport;
 uniform vec2 uSkyRotation;
 uniform vec4 uOrbit;
@@ -231,8 +205,7 @@ uniform vec3 uHand;
 uniform vec2 uScatter;
 uniform vec3 uTree;
 uniform vec4 uOther;
-uniform vec4 uWeight;
-uniform mat2 uDisk;
+uniform vec3 uWeight;
 uniform vec4 uFrame;
 uniform float uCenterY;
 varying lowp vec3 vColor;
@@ -276,7 +249,7 @@ void main() {
     // back along its own arc, including when the reversal happens mid-flight.
     float delay=floor(aSprite.w*4.)*.065;
     float spread=smoothstep(delay,.805+delay,uWeight.z);
-    float photoShare=clamp(uWeight.y/max(.00001,1.-uWeight.z-uWeight.w),0.,1.);
+    float photoShare=clamp(uWeight.y/max(.00001,1.-uWeight.z),0.,1.);
     bool ornament=aSprite.y==5. || aSprite.y==7.;
     vec2 origin=tree;
     if(uWeight.y>0.) {
@@ -331,17 +304,6 @@ void main() {
         vPhase = aSprite.z;
         vAlpha = (spread+(1.-spread)*(1.-photoShare))*(.88+.12*z)*ornamentLight;
         size = max(23.,aSprite.x*uFrame.z)*(1.+.12*z)*mix(1.,.62,spread)*ornamentSize;
-    }
-    if(uWeight.w>0. && (aSprite.y<4. || ornament)) {
-        float blend=smoothstep(0.,1.,uWeight.w);
-        vec2 disk=vec2(uViewport.x*.5,uCenterY)+uDisk*aDisk.xy;
-        p=mix(p,disk,blend);
-        float core=1.-smoothstep(.025,.20,aDisk.z);
-        vAlpha=mix(vAlpha, (.68+.30*core)*brightness, blend);
-        if(!ornament) {
-            vColor=mix(vColor,mix(palette(aSprite.z),vec3(1.,.88,.66),.44+.50*core),blend);
-            size=mix(size,aSprite.x*uFrame.z*(.82+.27*core),blend);
-        } else size=mix(size,aSprite.x*uFrame.z*.58,blend);
     }
     gl_Position = vec4(p/uViewport*vec2(2.,-2.)+vec2(-1.,1.),0.,1.);
     gl_PointSize = clamp(size*uFrame.y, 1., uFrame.w);
@@ -478,13 +440,7 @@ function gpuRenderer(gl, field) {
         gl.enableVertexAttribArray(location);
         gl.vertexAttribPointer(location, size, gl.FLOAT, false, STRIDE*4, offset*4);
     }
-    const diskBuffer=gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER,diskBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER,makeSpiral(field),gl.STATIC_DRAW);
-    const diskLocation=gl.getAttribLocation(program,'aDisk');
-    gl.enableVertexAttribArray(diskLocation);
-    gl.vertexAttribPointer(diskLocation,3,gl.FLOAT,false,0,0);
-    const uniform = Object.fromEntries(['Viewport','SkyRotation','Orbit','Pitch','Hand','Scatter','Tree','Other','Weight','Disk','Frame','CenterY','Gifts']
+    const uniform = Object.fromEntries(['Viewport','SkyRotation','Orbit','Pitch','Hand','Scatter','Tree','Other','Weight','Frame','CenterY','Gifts']
         .map(key => [key, gl.getUniformLocation(program, 'u'+key)]));
     const gifts=gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D,gifts);
@@ -515,8 +471,7 @@ function gpuRenderer(gl, field) {
             gl.uniform3f(uniform.Tree, l.treeWidth, l.treeHeight, l.treeBase);
             gl.uniform4f(uniform.Other, l.photoWidth, l.photoHeight, l.sphereRadius, l.sphereRadius);
             gl.uniform1f(uniform.CenterY, l.centerY);
-            gl.uniform4fv(uniform.Weight, weights);
-            if(weights[3]>0) gl.uniformMatrix2fv(uniform.Disk,false,diskMatrix(l.disk));
+            gl.uniform3fv(uniform.Weight, weights);
             gl.uniform4f(uniform.Frame, time, ratio, l.dotScale, maxSize);
             gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
             gl.drawArrays(gl.POINTS,0,giftStart);
@@ -526,13 +481,12 @@ function gpuRenderer(gl, field) {
                 gl.drawArrays(gl.POINTS,giftStart,total-giftStart);
             }
         },
-        dispose() { gl.deleteTexture(gifts); gl.deleteBuffer(diskBuffer); gl.deleteBuffer(buffer); gl.deleteProgram(program); }
+        dispose() { gl.deleteTexture(gifts); gl.deleteBuffer(buffer); gl.deleteProgram(program); }
     };
 }
 
 function canvasRenderer(canvas, field) {
     const ctx = canvas.getContext('2d');
-    const disk=makeSpiral(field);
     const gifts = makeGiftAtlas();
     const sphere=new Float32Array(field.length/STRIDE*3);
     let cachedShuffle=NaN;
@@ -600,9 +554,7 @@ function canvasRenderer(canvas, field) {
                     sphere[j+2]=(oz*shuffleY-ox*shuffleX)*norm;
                 }
             }
-            const photoShare=Math.min(1,Math.max(0,weights[1]/Math.max(.00001,1-weights[2]-weights[3])));
-            const diskBlend=weights[3]*weights[3]*(3-2*weights[3]);
-            const matrix=diskBlend>0 ? diskMatrix(l.disk) : null;
+            const photoShare=Math.min(1,Math.max(0,weights[1]/Math.max(.00001,1-weights[2])));
             for (let i=0,j=0;i<field.length;i+=STRIDE,j+=3) {
                 const kind=field[i+10], seed=field[i+12];
                 let x, y, alpha, size=field[i+9]*l.dotScale;
@@ -666,19 +618,10 @@ function canvasRenderer(canvas, field) {
                     }
                     if(ornament) alpha=(spread+(1-spread)*(1-photoShare))*ornamentLight;
                     if(kind===5) size=field[i+9]*l.dotScale*(1-.47*spread)*ornamentSize;
-                    if(diskBlend>0) {
-                        x+=(w/2+matrix[0]*disk[j]+matrix[2]*disk[j+1]-x)*diskBlend;
-                        y+=(l.centerY+matrix[1]*disk[j]+matrix[3]*disk[j+1]-y)*diskBlend;
-                        const core=Math.max(0,1-disk[j+2]/.20);
-                        alpha+=((.68+.30*core)*(.95+.12*Math.sin(time+seed*32))-alpha)*diskBlend;
-                        size+=(field[i+9]*l.dotScale*(ornament ? .58 : .82+.27*core)-size)*diskBlend;
-                        if(!ornament) {tintColumn=0; tintWeight=(.44+.50*core)*diskBlend;}
-                    }
                     if(kind===7) {
                         if(alpha<.01) continue;
                         const z=field[i]*si+field[i+2]*co;
                         size=Math.max(23,field[i+9]*l.dotScale)*(1+.12*z)*(1-.38*spread)*ornamentSize;
-                        size+=(field[i+9]*l.dotScale*.58-size)*diskBlend;
                         ctx.globalAlpha=alpha*(.88+.12*z);
                         ctx.drawImage(gifts,colorColumn*GIFT_CELL,0,GIFT_CELL,GIFT_CELL,x-size/2,y-size/2,size,size);
                         continue;
@@ -720,7 +663,7 @@ function mountScene(canvas) {
     }
     painter = createPainter();
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
-    const weights = new Float32Array([1,0,0,0]);
+    const weights = new Float32Array([1,0,0]);
     const startWeights = new Float32Array(weights);
     let target=0, start=0, elapsed=0, previous=0, request=0, lost=false, stopped=false;
     let duration=440, scattering=false, shuffle=0;
@@ -743,7 +686,7 @@ function mountScene(canvas) {
         const progress=motion.matches ? 1 : Math.min(1,Math.max(0,(now-start)/duration));
         // Starts moving on the first frame and still lands softly into its final pose.
         const ease=scattering ? progress : 1-(1-progress)**3;
-        for(let i=0;i<weights.length;i++) weights[i]=startWeights[i]+((i===target?1:0)-startWeights[i])*ease;
+        for(let i=0;i<3;i++) weights[i]=startWeights[i]+((i===target?1:0)-startWeights[i])*ease;
         return progress;
     }
     function draw(now) {
@@ -766,7 +709,6 @@ function mountScene(canvas) {
         } else { yawSpeed=0; pitchSpeed=0; }
         previous=now;
         updateWeights(now);
-        size.disk.angle=elapsed*DISK_SPEED;
         const angle = elapsed * SKY_SPEED + handYaw*.14;
         const skyRadius = Math.hypot(width,height) * .51;
         painter.draw(width,height,ratio,size,weights,elapsed,Math.cos(angle)*skyRadius,Math.sin(angle)*skyRadius,
@@ -817,15 +759,18 @@ function mountScene(canvas) {
             rotation.pitch=-.14+handPitch;
             return rotation;
         },
-        getDisk() { return size.disk; },
+        getDisk() {
+            // Album portraits orbit inside the full-width star field shared with the single-photo view.
+            size.disk.angle=elapsed*TAU/65;
+            return size.disk;
+        },
         setMode(mode) {
             if (!Object.hasOwn(MODES,mode) || MODES[mode]===target) return;
             const now=performance.now();
             updateWeights(now); startWeights.set(weights); start=now; target=MODES[mode];
             // A new seed is safe only before any item has left its source pose.
             if(mode==='galaxy' && weights[2]===0) shuffle=Math.random()*TAU;
-            const distance=Math.max(Math.abs((mode==='galaxy'?1:0)-weights[2]),
-                Math.abs((mode==='spiral'?1:0)-weights[3]));
+            const distance=Math.abs((mode==='galaxy'?1:0)-weights[2]);
             scattering=distance>.00001;
             duration=scattering ? Math.max(180,1150*distance) : 440;
             wake();
@@ -980,7 +925,7 @@ document.addEventListener('visibilitychange', syncAlbumAnimation);
 function showMode(mode) {
   const changed = stage.dataset.mode !== mode;
   stage.dataset.mode = mode;
-  scene.setMode(mode === 'all' ? 'spiral' : mode);
+  scene.setMode(mode === 'all' ? 'photo' : mode);
   el('spotlight').hidden = mode !== 'photo';
   wall.hidden = mode !== 'all';
   if (changed && mode === 'all') arrangeAlbum();
