@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#180d11">
+<link rel="canonical" href="https://saupox-hangzhou.github.io/christmas-tree-v17.6/?v=a9ca1de&amp;to=YYJ520">
 <meta name="description" content="用手势把星光聚成圣诞树，让珍藏的照片围成一颗心。">
 <title>圣诞 · 星光许愿树</title>
 <style>
@@ -17,12 +18,12 @@ button,a,input{font:inherit}
 button{cursor:pointer;color:inherit}
 button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid #ffd58a;outline-offset:4px}
 button:active{transform:translateY(1px)}
-button,.panel a{touch-action:manipulation}
+button{touch-action:manipulation}
 .mast{position:absolute;inset:clamp(18px,5vh,58px) var(--pad) auto;display:flex;align-items:flex-start;justify-content:space-between;pointer-events:none;z-index:3}
 .brand{max-width:35vw;text-shadow:0 2px 18px #2d120d}
 h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;font-weight:750;letter-spacing:-.035em;overflow-wrap:anywhere}
 .english{display:block;margin:5px 0 0;font:600 clamp(8px,.78vw,14px)/1.2 Georgia,serif;letter-spacing:.33em;color:#e6bd85}
-.pill,.tools,.preview,.photo-count,.drawer-button{background:var(--glass);border:1px solid var(--edge);box-shadow:inset 0 1px #ffffff0b;color:var(--gold)}
+.pill,.tools,.preview,.photo-count{background:var(--glass);border:1px solid var(--edge);box-shadow:inset 0 1px #ffffff0b;color:var(--gold)}
 .mode-label{position:absolute;left:50%;transform:translateX(-50%);padding:7px 19px;border-radius:24px;font-size:clamp(12px,1.15vw,22px);white-space:nowrap}
 .camera-toggle{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:7px 16px;border-radius:24px;font-size:clamp(12px,1vw,17px)}
 .dot{width:7px;height:7px;border-radius:50%;background:#be966a}
@@ -32,9 +33,14 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
 .focus-frame img{display:block;width:auto;height:auto;max-width:min(61vw,850px);max-height:65vh;min-width:60px;min-height:60px;object-fit:contain;border-radius:7px}
 .photo-count{margin-top:13px;padding:5px 14px;border-radius:30px;font-size:12px}
 #wall{z-index:1;pointer-events:none}
-.heart-card{position:absolute;display:block;width:clamp(42px,min(7.2vw,11vh),142px);aspect-ratio:.83;overflow:hidden;padding:2px;background:linear-gradient(150deg,#ffdda6,#997345 52%,#f8ce90);border:0;border-radius:8%;box-shadow:0 0 12px #fec77b3d,0 6px 22px #16091099;pointer-events:auto;transition:filter .15s}
+.heart-card{position:absolute;display:block;width:clamp(42px,min(7.2vw,11vh),142px);aspect-ratio:.83;overflow:hidden;padding:2px;background:linear-gradient(150deg,#ffdda6,#997345 52%,#f8ce90);border:0;border-radius:8%;box-shadow:0 0 12px #fec77b3d,0 6px 22px #16091099;pointer-events:none}
 .heart-card img{display:block;width:100%;height:100%;object-fit:cover;border-radius:6%}
-.heart-card:hover{filter:brightness(1.16);z-index:1}
+#stage[data-mode="photo"],#stage[data-mode="heart"]{touch-action:pan-y pinch-zoom}
+#stage[data-mode="photo"] #stars,#stage[data-mode="heart"] #stars,.focus-frame{cursor:grab}
+.focus-frame,.heart-card{transform-origin:50% 50%;user-select:none}
+.focus-frame{transform:perspective(1200px) rotateY(var(--photo-yaw,0deg))}
+.heart-card{transform:translate(-50%,-50%) rotate(var(--card-tilt,0deg)) perspective(700px) rotateY(var(--photo-yaw,0deg))}
+.focus-frame img,.heart-card img{transform:scaleX(var(--photo-face,1));pointer-events:none;-webkit-user-drag:none}
 [hidden]{display:none!important}
 .preview{position:absolute;right:clamp(12px,2vw,36px);bottom:clamp(61px,8vh,100px);width:clamp(126px,16.5vw,290px);padding:8px;border-radius:13px;z-index:2}
 .preview-title{display:block;margin:0 0 5px 1px;font:600 10px/1 Georgia,serif;letter-spacing:.11em;color:#d6b990}
@@ -45,29 +51,16 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
 .feed button{z-index:1;padding:8px 12px;border:1px solid var(--edge);border-radius:30px;background:#201718;font-size:12px}
 .bottom{position:absolute;inset:auto var(--pad) max(14px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:center;gap:10px;z-index:3}
 .tools{display:flex;align-items:center;gap:4px;padding:4px 6px;border-radius:40px;max-width:100%}
-.tools button,.drawer-button{white-space:nowrap;border-radius:30px;padding:7px 12px;font-size:12px;line-height:1.3}
+.tools button{white-space:nowrap;border-radius:30px;padding:7px 12px;font-size:12px;line-height:1.3}
 .tools button{background:none;border:0;color:#e4cbb1}
 .tools button[aria-pressed="true"]{background:#704a2d60;color:#fff1cf}
-.tools button:hover,.drawer-button:hover,.camera-toggle:hover,.feed button:hover{background:#523322}
-.drawer-button{position:absolute;left:0}
+.tools button:hover,.camera-toggle:hover,.feed button:hover{background:#523322}
 .tools .shortcut{font:11px Georgia,serif;opacity:.78;margin-left:4px}
-.panel{position:fixed;inset:0;margin:auto;padding:24px;width:min(390px,calc(100vw - 32px));max-height:88dvh;border:1px solid #89683f;border-radius:18px;background:#21161a;color:#f8e7cc;box-shadow:0 28px 85px #0009}
-.panel::backdrop{background:#0b050abc}
-.panel-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.panel h2{font:600 22px/1.2 "Microsoft YaHei",sans-serif;margin:0}
-.panel button,.panel label.file,.panel a{background:#322329;border:1px solid #886a4b;border-radius:8px;color:#ffe3bd;padding:9px 12px;cursor:pointer;font-size:13px;text-decoration:none;display:inline-block}
-.panel label.field,.panel legend{display:block;margin:0 0 8px;font-size:13px;color:#e8c594}
-.panel input[type=text]{width:100%;border:1px solid #886a4b;color:#fff2de;background:#140e12;border-radius:7px;padding:9px}
-.panel fieldset{border:0;margin:17px 0 0;padding:0}
-.panel .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.panel footer{display:flex;justify-content:space-between;gap:10px;margin-top:22px;align-items:center}
-.panel footer a{border:0;background:transparent;padding:4px 0;text-decoration:underline;text-underline-offset:3px}
-.detail{margin:7px 0 0;font-size:12px;line-height:1.6;color:#c6b19a}
 .toast{position:absolute;left:50%;bottom:72px;transform:translateX(-50%);max-width:min(85vw,580px);padding:8px 15px;border:1px solid var(--edge);border-radius:15px;color:#fff0d7;background:#24161bed;text-align:center;font-size:13px;z-index:6}
-@media(max-width:820px){.drawer-button{position:static}.tools .shortcut{display:none}.mast{inset:22px 20px auto}.mode-label{top:50px;font-size:12px}.preview{width:116px;right:12px;bottom:65px}.focus-frame img{max-width:77vw;max-height:56vh}}
-@media(max-width:520px){.brand{max-width:59vw}.camera-toggle{padding:7px 11px;min-height:35px;font-size:11px}.english{letter-spacing:.22em}.mode-label{top:53px;padding:5px 12px}.bottom{inset-inline:6px;gap:4px}.tools{gap:0;padding:3px}.tools button,.drawer-button{font-size:11px;padding:10px 8px}.preview{width:94px;padding:5px;bottom:66px}.preview-title{font-size:7px}.feed button{font-size:10px;padding:4px 6px}.photo-count{font-size:11px}.heart-card{width:clamp(35px,8.7vw,45px)}}
-@media(max-height:500px) and (min-width:521px){.mast{inset:10px 15px auto}.mode-label{top:0}.preview{width:102px}.bottom{bottom:5px}.tools button,.drawer-button{padding:5px 9px}.focus-frame img{max-height:60vh}}
-@media(prefers-reduced-motion:no-preference){#stage[data-mode="photo"] .focus-frame{animation:reveal .24s ease-out both}#stage[data-mode="heart"] .heart-card{animation:appear .22s ease-out both}@keyframes reveal{from{opacity:.2;transform:scale(.95)}}@keyframes appear{from{opacity:.15}}}
+@media(max-width:820px){.tools .shortcut{display:none}.mast{inset:22px 20px auto}.mode-label{top:50px;font-size:12px}.preview{width:116px;right:12px;bottom:65px}.focus-frame img{max-width:77vw;max-height:56vh}}
+@media(max-width:520px){.brand{max-width:59vw}.camera-toggle{padding:7px 11px;min-height:35px;font-size:11px}.english{letter-spacing:.22em}.mode-label{top:53px;padding:5px 12px}.bottom{inset-inline:6px;gap:4px}.tools{gap:0;padding:3px}.tools button{font-size:11px;padding:10px 8px}.preview{width:94px;padding:5px;bottom:66px}.preview-title{font-size:7px}.feed button{font-size:10px;padding:4px 6px}.photo-count{font-size:11px}.heart-card{width:clamp(35px,8.7vw,45px)}}
+@media(max-height:500px) and (min-width:521px){.mast{inset:10px 15px auto}.mode-label{top:0}.preview{width:102px}.bottom{bottom:5px}.tools button{padding:5px 9px}.focus-frame img{max-height:60vh}}
+@media(prefers-reduced-motion:no-preference){#stage[data-mode="photo"] .focus-frame{animation:reveal .24s ease-out both}#stage[data-mode="heart"] .heart-card{animation:appear .22s ease-out both}@keyframes reveal{from{opacity:.2;scale:.95}}@keyframes appear{from{opacity:.15}}}
 </style>
 </head>
 <body>
@@ -75,31 +68,31 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
   <canvas id="stars" aria-label="金色粒子圣诞树，树顶有一颗五角星"></canvas>
   <header class="mast">
     <div class="brand"><h1 id="title">圣诞 · 星光许愿树</h1><span class="english" lang="en">CHRISTMAS WISH TREE</span></div>
-    <div id="mode-label" class="mode-label pill" role="status">握拳 · 星光聚成树</div>
+    <div id="mode-label" class="mode-label pill" role="status">星光聚成树</div>
     <button id="camera-toggle" class="camera-toggle pill" aria-pressed="false"><span class="dot"></span><span id="camera-state">开启手势</span></button>
   </header>
-  <div id="spotlight" hidden><button class="focus-frame" title="换一张照片" aria-label="换一张照片"><img id="focus-photo" alt="正在展示的照片"></button><div id="photo-count" class="photo-count"></div></div>
+  <div id="spotlight" hidden><div class="focus-frame"><img id="focus-photo" alt="正在展示的照片"></div><div id="photo-count" class="photo-count"></div></div>
   <div id="wall" aria-label="爱心照片墙" hidden></div>
   <aside class="preview" aria-label="手势摄像头预览"><span class="preview-title" lang="en">GESTURE CAM</span><div class="feed"><video id="video" muted playsinline autoplay></video><canvas id="skeleton" hidden></canvas><button id="camera-start">开启镜头</button></div></aside>
   <nav class="bottom" aria-label="场景操作">
-    <button id="settings" class="drawer-button">我的设置</button>
-    <div class="tools"><button data-mode="tree" aria-pressed="true">握拳 · 聚成树</button><button data-mode="photo" aria-pressed="false">1–4 指 · 照片</button><button data-mode="heart" aria-pressed="false">五指 · 爱心</button><button id="full">全屏<span class="shortcut">F</span></button></div>
+    <div class="tools">
+      <button data-count="0" aria-pressed="true">聚成树</button>
+      <button data-count="1" aria-pressed="false" aria-label="1 指 · 随机抽照片">1 指</button>
+      <button data-count="2" aria-pressed="false" aria-label="2 指 · 随机抽照片">2 指</button>
+      <button data-count="3" aria-pressed="false" aria-label="3 指 · 随机抽照片">3 指</button>
+      <button data-count="4" aria-pressed="false" aria-label="4 指 · 随机抽照片">4 指</button>
+      <button data-count="5" aria-pressed="false">五指 · 爱心</button>
+      <button id="full">全屏<span class="shortcut">F</span></button>
+    </div>
   </nav>
   <div class="toast" role="status" hidden></div>
 </main>
-<dialog class="panel" id="panel" aria-labelledby="settings-title">
-  <div class="panel-top"><h2 id="settings-title">我的许愿树</h2><button id="close">关闭</button></div>
-  <label class="field" for="title-input">树的名字</label><input id="title-input" type="text" maxlength="32" value="圣诞 · 星光许愿树">
-  <fieldset><legend>照片</legend><div class="row"><button id="pick-photos">添加照片</button><button id="manage-photos">管理照片</button><input type="file" id="photos-input" accept="image/*" multiple hidden></div><p id="album-info" class="detail"></p><div id="album-list" class="row" hidden></div></fieldset>
-  <fieldset><legend>背景音乐</legend><div class="row"><button id="pick-music">选择音乐</button><input type="file" id="music-input" accept="audio/*" hidden><button id="music-play" disabled>播放</button></div></fieldset>
-  <p class="detail">键盘 0 聚成树，1–4 看照片，5 展开爱心。空格换照片，Esc 收回照片。</p>
-  <footer><a href="./classic.html">经典版</a><a href="./assets/photos/CREDITS.md">示例照片来源</a><button id="done">完成</button></footer>
-</dialog>
 <script type="module">
 const {mountScene,heartPoint} = (() => {
 // All particle poses share one vertex buffer, so a gesture only changes three
 // interpolation weights. The hand tracker and the scene have independent clocks.
 const TAU = Math.PI * 2;
+const SKY_SPEED = TAU / 72;
 const MODES = {tree: 0, photo: 1, heart: 2};
 const STRIDE = 13;
 const PALETTE = [
@@ -107,9 +100,10 @@ const PALETTE = [
     [1, .43, .32], [.40, .85, .59], [.97, .79, .49]
 ];
 const PHOTO_HEART = [
-    [-.53, -.75], [.53, -.75], [-1, -.42], [-.42, -.42], [.42, -.42],
-    [1, -.42], [-.88, -.03], [0, -.03], [.88, -.03], [-.66, .33],
-    [.66, .33], [0, .68]
+    [-.53, -.80], [.53, -.80],
+    [-1, -.43], [-.40, -.43], [.40, -.43], [1, -.43],
+    [-.85, -.04], [0, -.04], [.85, -.04],
+    [-.56, .35], [.56, .35], [0, .75]
 ];
 
 function layout(width, height) {
@@ -128,7 +122,7 @@ function layout(width, height) {
 function heartPoint(index, count, width, height) {
     const l = layout(width, height);
     let point;
-    if (count === 12) point = PHOTO_HEART[index % 12];
+    if (count === PHOTO_HEART.length) point = PHOTO_HEART[index % count];
     else if (count === 1) point = [0, 0];
     else {
         const a = (index + .5) * TAU / Math.max(1, count);
@@ -171,12 +165,17 @@ function makeField(count) {
             k < .88 ? 4 : k < .90 ? 5 : 6;
         data.push(...tree, ...photo, ...heart, diameter, kind, color, random());
     }
-    // Stable sky specks and out-of-focus lamps shared by all three modes.
-    for (let i = 0; i < 138; i++) {
-        const bokeh = i < 35, x = random() * 2 - 1, y = random() * 2 - 1;
-        data.push(x, y, 0, 0, 0, 0, 0, 0, 0,
-            bokeh ? 12 + random() ** 2 * 55 : 1.1 + random() ** 3 * 5,
-            bokeh ? 4 : 6, bokeh ? 3 : 2, random());
+    // A disk extending past all four corners stays populated at every angle.
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    for (const [kind, amount] of [[4, 72], [6, 228]]) {
+        for (let i = 0; i < amount; i++) {
+            const radius = Math.sqrt((i + random()) / amount);
+            const angle = i * goldenAngle + kind + (random() - .5) * .15;
+            const bokeh = kind === 4;
+            data.push(radius*Math.cos(angle), radius*Math.sin(angle), 0, 0, 0, 0, 0, 0, 0,
+                bokeh ? 12 + random() ** 2 * 55 : 1.35 + random() ** 3 * 5.5,
+                kind, bokeh ? 3 : 2, random());
+        }
     }
     data.push(0, 1.052, 0, 0, 0, 0, 0, 0, 0, 43, 5, 2, .1);
     return new Float32Array(data);
@@ -188,6 +187,7 @@ attribute vec3 aPhoto;
 attribute vec3 aHeart;
 attribute vec4 aSprite;
 uniform vec2 uViewport;
+uniform vec2 uSkyRotation;
 uniform vec3 uTree;
 uniform vec4 uOther;
 uniform vec3 uWeight;
@@ -225,7 +225,11 @@ void main() {
     float size = aSprite.x * uFrame.z * depth * (1.+.14*uWeight.z);
     vAlpha *= 1.+.16*uWeight.z;
     if(vKind == 4. || vKind == 6.) {
-        p = (aTree.xy*.5+.5)*uViewport + breathe * (vKind==4. ? 5. : 2.);
+        // Pixel y increases down the screen, so positive rotation is clockwise.
+        p = uViewport*.5 + vec2(
+            aTree.x*uSkyRotation.x-aTree.y*uSkyRotation.y,
+            aTree.x*uSkyRotation.y+aTree.y*uSkyRotation.x);
+        size = aSprite.x * uFrame.z;
         vAlpha = vKind==4. ? .12+.12*aSprite.w : .36+.40*brightness;
     }
     if(vKind == 5.) {
@@ -301,17 +305,18 @@ function gpuRenderer(gl, field) {
         gl.enableVertexAttribArray(location);
         gl.vertexAttribPointer(location, size, gl.FLOAT, false, STRIDE*4, offset*4);
     }
-    const uniform = Object.fromEntries(['Viewport','Tree','Other','Weight','Frame','CenterY']
+    const uniform = Object.fromEntries(['Viewport','SkyRotation','Tree','Other','Weight','Frame','CenterY']
         .map(key => [key, gl.getUniformLocation(program, 'u'+key)]));
     const maxSize = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1];
     gl.enable(gl.BLEND);
     gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.clearColor(0,0,0,0);
     return {
-        draw(w, h, ratio, l, weights, time) {
+        draw(w, h, ratio, l, weights, time, skyCos, skySin) {
             gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.uniform2f(uniform.Viewport, w, h);
+            gl.uniform2f(uniform.SkyRotation, skyCos, skySin);
             gl.uniform3f(uniform.Tree, l.treeWidth, l.treeHeight, l.treeBase);
             gl.uniform4f(uniform.Other, l.photoWidth, l.photoHeight, l.heartWidth, l.heartHeight);
             gl.uniform1f(uniform.CenterY, l.centerY);
@@ -355,7 +360,7 @@ function canvasRenderer(canvas, field) {
         });
     }
     return {
-        draw(w, h, ratio, l, weights, time) {
+        draw(w, h, ratio, l, weights, time, skyCos, skySin) {
             ctx.setTransform(ratio,0,0,ratio,0,0);
             ctx.clearRect(0,0,w,h);
             const co=Math.cos(time*.115), si=Math.sin(time*.115);
@@ -363,7 +368,8 @@ function canvasRenderer(canvas, field) {
                 const kind=field[i+10], seed=field[i+12];
                 let x, y, alpha, size=field[i+9]*l.dotScale;
                 if (kind===4 || kind===6) {
-                    x=(field[i]+1)*w/2; y=(field[i+1]+1)*h/2;
+                    x=w/2+field[i]*skyCos-field[i+1]*skySin;
+                    y=h/2+field[i]*skySin+field[i+1]*skyCos;
                     alpha=kind===4?.13:.67;
                 } else {
                     const treeX=w/2+(field[i]*co-field[i+2]*si)*l.treeWidth;
@@ -436,7 +442,9 @@ function mountScene(canvas) {
         if (!motion.matches && previous) elapsed+=Math.min(.08,(now-previous)/1000);
         previous=now;
         updateWeights(now);
-        painter.draw(width,height,ratio,size,weights,elapsed);
+        const angle = elapsed * SKY_SPEED;
+        const skyRadius = Math.hypot(width,height) * .51;
+        painter.draw(width,height,ratio,size,weights,elapsed,Math.cos(angle)*skyRadius,Math.sin(angle)*skyRadius);
         if (!motion.matches) wake();
     }
     function wake() {
@@ -481,14 +489,57 @@ return {mountScene,heartPoint};
 const el = id => document.getElementById(id);
 const stage = el('stage');
 const scene = mountScene(el('stars'));
-const resources = location.protocol === 'file:' ? new URL('https://saupox-hangzhou.github.io/christmas-tree-v17.6/') : new URL('./',location.href);
-const defaultPhotos = Array.from({length:12},(_,i)=>({data:new URL('assets/photos/'+String(i+1).padStart(2,'0')+'.jpg',resources).href}));
-let savedPhotos = [], active = 0, mode = 'tree', lastCount = null, db = null;
-let session = null, cameraOn = false, toastTimer, musicURL;
 const camera = el('video'), sketch = el('skeleton'), pen = sketch.getContext('2d');
-const panel = el('panel'), audio = new Audio();
-audio.loop = true;
-const album = () => savedPhotos.length ? savedPhotos : defaultPhotos;
+const photos = Array.from({length:12}, (_, index) =>
+  new URL(`./assets/yyj/${index + 1}.jpg`, document.baseURI).href);
+let session = null, cameraOn = false, pose = 0, toastTimer;
+let remainingPhotos = [], lastPhoto = null;
+let photoYaw = 0, palmAnchor = null, drag = null;
+
+function setPhotoYaw(degrees) {
+  photoYaw = degrees;
+  stage.style.setProperty('--photo-yaw', degrees.toFixed(2) + 'deg');
+  // Keep the picture readable when the back of the frame turns towards the viewer.
+  stage.style.setProperty('--photo-face', Math.cos(degrees * Math.PI / 180) < 0 ? '-1' : '1');
+}
+
+function endDrag() {
+  if (drag && stage.hasPointerCapture(drag.id)) stage.releasePointerCapture(drag.id);
+  drag = null;
+  palmAnchor = null;
+}
+
+function followPalm(points) {
+  if (drag || pose === 0 || points?.length !== 21) { palmAnchor = null; return; }
+  // Use the wrist and knuckles so changing finger shape barely shifts the pivot.
+  const x = 1 - (points[0].x + points[5].x + points[9].x + points[13].x + points[17].x) / 5;
+  if (!Number.isFinite(x)) { palmAnchor = null; return; }
+  if (!palmAnchor) palmAnchor = {x, yaw: photoYaw};
+  const degrees = palmAnchor.yaw + (x - palmAnchor.x) * 480;
+  if (Math.abs(degrees - photoYaw) >= 1) setPhotoYaw(degrees);
+}
+
+stage.addEventListener('pointerdown', event => {
+  if (pose === 0 || !event.isPrimary || event.button !== 0 || event.target.closest('button,a,input,.preview,.bottom')) return;
+  drag = { id:event.pointerId, x:event.clientX, yaw:photoYaw };
+  stage.setPointerCapture(event.pointerId);
+});
+stage.addEventListener('pointermove', event => {
+  if (drag?.id !== event.pointerId) return;
+  setPhotoYaw(drag.yaw + (event.clientX - drag.x) * 480 / stage.clientWidth);
+});
+for (const type of ['pointerup','pointercancel','lostpointercapture']) {
+  stage.addEventListener(type, event => { if (drag?.id === event.pointerId) endDrag(); });
+}
+
+function drawPhoto() {
+  if (remainingPhotos.length === 0) remainingPhotos = [1, 2, 3, 4];
+  const choices = remainingPhotos.filter(number => number !== lastPhoto);
+  const number = choices[Math.floor(Math.random() * choices.length)];
+  remainingPhotos.splice(remainingPhotos.indexOf(number), 1);
+  lastPhoto = number;
+  return number;
+}
 
 function hint(message) {
   const toast = document.querySelector('.toast');
@@ -497,62 +548,72 @@ function hint(message) {
   toast.hidden = false;
   toastTimer = setTimeout(() => toast.hidden = true, 3200);
 }
-function countLabel() {
-  const n = album().length;
-  el('album-info').textContent = savedPhotos.length ? `已有 ${n} 张个人照片，仅保存在这个浏览器里。` : '当前展示 12 张示例照片。添加自己的照片即可替换。';
-}
-function focusPhoto() {
-  const photos = album();
-  active = ((active % photos.length) + photos.length) % photos.length;
-  el('focus-photo').src = photos[active].data;
-  el('photo-count').textContent = `第 ${active+1} 张照片 · 共 ${photos.length} 张`;
-}
+
 function placeHeart() {
-  const {width,height} = stage.getBoundingClientRect();
+  const {width, height} = stage.getBoundingClientRect();
+  const angles = [-8, 7, -8, 5, -5, 8, -5, 0, 5, 7, -7, 0];
   Array.from(el('wall').children).forEach((card, i) => {
-    const p = heartPoint(i, 12, width, height);
-    card.style.left = p.x+'px';
-    card.style.top = p.y+'px';
-    card.style.transform = `translate(-50%,-50%) rotate(${[-8,7,-10,5,-6,8,-5,0,5,7,-7,0][i]}deg)`;
+    const p = heartPoint(i, photos.length, width, height);
+    card.style.left = p.x + 'px';
+    card.style.top = p.y + 'px';
+    card.style.setProperty('--card-tilt', angles[i]+'deg');
   });
 }
-function fillHeart() {
-  const photos = album(), frag = document.createDocumentFragment();
-  for (let i=0;i<12;i++) {
-    const index = (active+i)%photos.length, card = document.createElement('button'), img = new Image();
-    card.type = 'button'; card.className = 'heart-card'; card.ariaLabel = `查看第 ${index+1} 张照片`;
-    img.alt = ''; img.src = photos[index].data;
-    card.append(img); card.addEventListener('click', () => { active=index; showMode('photo'); });
-    frag.append(card);
+
+function buildWall() {
+  const wall = document.createDocumentFragment();
+  for (const [index, url] of photos.entries()) {
+    const frame = document.createElement('div');
+    frame.className = 'heart-card';
+    const img = new Image();
+    img.src = url;
+    img.alt = `爱心墙照片 ${index + 1}`;
+    frame.append(img);
+    wall.append(frame);
   }
-  el('wall').replaceChildren(frag); placeHeart();
+  el('wall').replaceChildren(wall);
 }
-function showMode(next, advance=false) {
-  if (advance) active = (active + 1) % album().length;
-  mode = next; stage.dataset.mode = mode;
+
+function showPose(count, waiting = false) {
+  if (count !== pose || count > 0 && count < 5) {
+    endDrag();
+    setPhotoYaw(0);
+  }
+  pose = count;
+  const mode = count === 0 ? 'tree' : count === 5 ? 'heart' : 'photo';
+  stage.dataset.mode = mode;
   scene.setMode(mode);
   el('spotlight').hidden = mode !== 'photo';
   el('wall').hidden = mode !== 'heart';
-  if (mode === 'photo') focusPhoto();
-  if (mode === 'heart') fillHeart();
-  const descriptions = {tree:'握拳 · 星光聚成树',photo:'1–4 指 · 一张回忆正在发光',heart:`五指 · ${Math.min(12,album().length)} 张照片围成一颗心`};
-  el('mode-label').textContent = descriptions[mode];
-  document.querySelectorAll('.tools [data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode===mode)));
+  let label;
+  if (mode === 'photo') {
+    const number = drawPhoto();
+    el('focus-photo').src = photos[number - 1];
+    el('focus-photo').alt = `第 ${number} 张照片`;
+    el('photo-count').textContent = `第 ${number} 张照片`;
+    label = `${count} 指 · 一张回忆正在发光`;
+  } else if (mode === 'heart') {
+    if (!el('wall').childElementCount) buildWall();
+    placeHeart();
+    label = `五指 · ${photos.length} 张照片围成一颗心`;
+  } else {
+    label = waiting ? '星光聚成树' : '握拳 · 星光聚成树';
+  }
+  el('mode-label').textContent = label;
+  document.querySelectorAll('.tools [data-count]').forEach(button =>
+    button.setAttribute('aria-pressed', String(Number(button.dataset.count) === count)));
 }
-let photoShown = false;
-function drawMemory() {
-  showMode('photo', photoShown);
-  photoShown = true;
-}
+
 function handleCount(count) {
-  if (count === lastCount) return;
-  lastCount = count;
-  if (count === null) { if (cameraOn) el('camera-state').textContent='等待手势'; return; }
+  if (count === null) {
+    if (cameraOn) el('camera-state').textContent = '等待手势';
+    showPose(0, true);
+    return;
+  }
   el('camera-state').textContent = `手部追踪 · ${count} 指`;
-  if (count === 0) showMode('tree');
-  else if (count === 5) showMode('heart');
-  else drawMemory();
+  if (count !== pose || count === 0) showPose(count);
 }
+
 const bones = [[0,1,2,3,4],[0,5,6,7,8],[5,9,13,17,0],[9,10,11,12],[13,14,15,16],[17,18,19,20]];
 function drawSkeleton(points) {
   sketch.hidden = !points?.length;
@@ -575,7 +636,8 @@ function setCameraStatus(status) {
   el('camera-toggle').dataset.live = String(cameraOn);
   el('camera-toggle').setAttribute('aria-pressed', String(!!session && (cameraOn || status==='starting')));
   el('camera-start').hidden = cameraOn || status==='starting';
-  if (!cameraOn) {sketch.hidden=true; lastCount=null;}
+  if (!cameraOn) sketch.hidden = true;
+  showPose(0, true);
 }
 function stopCamera() {
   const prev = session;
@@ -588,7 +650,11 @@ async function toggleCamera() {
   const current = {controller:new AbortController(), stop:null};
   session = current; setCameraStatus('starting');
   try {
-    const {startGestureCamera} = await import(new URL('gesture.js',resources).href);
+    // Browser file previews load the tracker over HTTPS. The album always stays relative to this page.
+    const trackerURL = location.protocol === 'file:'
+      ? 'https://saupox-hangzhou.github.io/christmas-tree-v17.6/gesture.js'
+      : new URL('./gesture.js', document.baseURI).href;
+    const {startGestureCamera} = await import(trackerURL);
     if(session!==current) return;
     current.stop = await startGestureCamera(camera,
       count => {if (session===current) handleCount(count);},
@@ -600,7 +666,11 @@ async function toggleCamera() {
           hint(status==='denied'?'请在浏览器中允许摄像头，或点下方按钮操作。':status==='no-device'?'未检测到摄像头，可以用按钮或键盘切换。':'手势识别暂不可用，点击右上角可重试。');
         }
       },
-      points => {if(session===current) drawSkeleton(points);}, current.controller.signal);
+      points => {
+        if (session !== current) return;
+        followPalm(points);
+        drawSkeleton(points);
+      }, current.controller.signal);
     if(session!==current) current.stop?.();
   } catch {if(session===current){stopCamera();hint('摄像头暂时无法开启，可以用按钮操作。');}}
 }
@@ -613,114 +683,31 @@ function fullscreen() {
 }
 el('full').onclick = fullscreen;
 document.addEventListener('fullscreenchange',()=>el('full').firstChild.textContent=document.fullscreenElement?'退出全屏':'全屏');
-el('settings').onclick = () => panel.showModal();
-el('close').onclick = el('done').onclick = () => panel.close();
-el('title-input').oninput = e => {
-  const name = e.target.value.trim() || '圣诞 · 星光许愿树';
-  el('title').textContent = document.title = name;
-  try {localStorage.setItem('wish-tree-title',name);} catch {}
-};
-try {
-  const old = JSON.parse(localStorage.getItem('v16_text_config') || '{}');
-  const title = localStorage.getItem('wish-tree-title') || [old.line1,old.line2].filter(Boolean).join(' ');
-  if(title) el('title-input').value=el('title').textContent=document.title=title;
-} catch {}
-window.addEventListener('resize',()=>{if(mode==='heart') placeHeart();});
-document.querySelector('.focus-frame').onclick = drawMemory;
-document.querySelectorAll('.tools [data-mode]').forEach(b=>b.onclick=()=>b.dataset.mode==='photo'?drawMemory():showMode(b.dataset.mode));
-window.addEventListener('keydown',e=>{
-  if(panel.open || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
-  if(e.code==='Space' && e.target.closest?.('button,a,input')) return;
-  if(e.code==='Space' || /^[1-4]$/.test(e.key)){e.preventDefault();drawMemory();}
-  else if(e.key==='0'||e.key==='Escape')showMode('tree');
-  else if(e.key==='5')showMode('heart');
-  else if(e.key.toLowerCase()==='f')fullscreen();
+window.addEventListener('resize', () => { if (pose === 5) placeHeart(); });
+document.querySelectorAll('.tools [data-count]').forEach(button => {
+  button.onclick = () => showPose(Number(button.dataset.count));
+});
+window.addEventListener('keydown', event => {
+  if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
+  if (/^[0-5]$/.test(event.key)) showPose(Number(event.key));
+  else if (event.key === 'Escape') showPose(0, true);
+  else if (event.code === 'Space' && !event.target.closest?.('button, a, input')) {
+    event.preventDefault();
+    showPose(pose >= 1 && pose < 4 ? pose + 1 : 1);
+  } else if (event.key.toLowerCase() === 'f') fullscreen();
 });
 
-function openAlbum() {
-  return new Promise((resolve,reject)=>{
-    const req=indexedDB.open('GrandTreeDB_v17_Clean',1);
-    req.onupgradeneeded=()=>{for(const n of ['photos','music'])if(!req.result.objectStoreNames.contains(n))req.result.createObjectStore(n,{keyPath:'id'});};
-    req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
-    req.onblocked=()=>reject(new Error('blocked'));
-  });
-}
-function record(store,method,...args) {
-  return new Promise((resolve,reject)=>{
-    const tx=db.transaction(store,method==='getAll'||method==='get'?'readonly':'readwrite');
-    const req=tx.objectStore(store)[method](...args);
-    tx.oncomplete=()=>resolve(req.result);tx.onabort=()=>reject(tx.error||new Error('aborted'));
-  });
-}
-function setMusic(blob) {
-  if(musicURL) URL.revokeObjectURL(musicURL);
-  musicURL=typeof blob==='string'?blob:URL.createObjectURL(blob);
-  audio.src=musicURL;el('music-play').disabled=false;
-}
-countLabel();
-const albumReady=(async()=>{
-  try {
-    db=await openAlbum();
-    const [photos, music]=await Promise.all([record('photos','getAll'),record('music','get','bgm')]);
-    savedPhotos=photos.filter(p=>typeof p.data==='string'||p.data instanceof Blob).map(p=>({...p,data:typeof p.data==='string'?p.data:URL.createObjectURL(p.data)}));
-    if(music?.data)setMusic(music.data);
-    countLabel();if(mode!=='tree')showMode(mode);
-  } catch {db=null;}
-})();
-// Decode the small default album before the first gesture reveals the wall.
-albumReady.then(async()=>{
-  if(savedPhotos.length || navigator.connection?.saveData) return;
-  for(const photo of defaultPhotos) {
-    const img=new Image();img.src=photo.data;
-    try{await img.decode();photo.preview=img;}catch{}
-  }
-});
-async function readPhoto(file) {
-  const uri=URL.createObjectURL(file), img=new Image(); img.src=uri;
-  try {
-    await img.decode();
-    const s=Math.min(1,1440/Math.max(img.naturalWidth,img.naturalHeight)), c=document.createElement('canvas');
-    c.width=Math.max(1,Math.round(img.naturalWidth*s));c.height=Math.max(1,Math.round(img.naturalHeight*s));
-    const ctx=c.getContext('2d');ctx.fillStyle='#261c1b';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);
-    return c.toDataURL('image/jpeg',.86);
-  } finally {URL.revokeObjectURL(uri);}
-}
-function renderManager() {
-  const box=el('album-list');box.replaceChildren();
-  for(const [i,p] of savedPhotos.entries()){
-    const b=document.createElement('button'), img=new Image();
-    b.ariaLabel=`移除第 ${i+1} 张照片`; b.title=b.ariaLabel; b.style.padding='3px'; img.src=p.data; img.alt='';img.width=40;img.height=40;img.style.objectFit='cover';
-    b.append(img,' ×');b.onclick=async()=>{
-      try {if(db)await record('photos','delete',p.id);savedPhotos=savedPhotos.filter(item=>item!==p);active=0;countLabel();renderManager();showMode(mode);}
-      catch {hint('照片移除失败，请重试。');}
-    };box.append(b);
+// Decode the album up front so switching hand poses can reuse the decoded photos.
+const previews = [];
+async function preloadAlbum() {
+  if (navigator.connection?.saveData) return;
+  for (const url of photos) {
+    const img = new Image();
+    img.src = url;
+    try { await img.decode(); previews.push(img); } catch {}
   }
 }
-el('manage-photos').onclick=()=>{const box=el('album-list');box.hidden=!box.hidden;if(!box.hidden)renderManager();};
-el('pick-photos').onclick=()=>el('photos-input').click();
-el('photos-input').onchange=async e=>{
-  const files=[...e.target.files];e.target.value='';if(!files.length)return;
-  const button=el('pick-photos');button.disabled=true;button.textContent='正在添加…';
-  await albumReady;let failed=0,temporary=false,added=0;
-  for(const f of files){
-    try {
-      const p={id:Date.now()+'-'+Math.random().toString(36).slice(2),data:await readPhoto(f)};
-      if(db){try{await record('photos','put',p);}catch{temporary=true;}}else temporary=true;
-      savedPhotos.push(p);added++;
-    }catch{failed++;}
-  }
-  button.disabled=false;button.textContent='添加照片';active=0;photoShown=false;countLabel();renderManager();showMode(mode);
-  el('album-info').textContent+=` 已添加 ${added} 张。`+(failed?` ${failed} 张无法读取。`:'')+(temporary?' 部分照片仅在本次打开时可用。':'');
-};
-el('pick-music').onclick=()=>el('music-input').click();
-el('music-input').onchange=async e=>{
-  const f=e.target.files[0];e.target.value='';if(!f)return;
-  await albumReady;setMusic(f);audio.play().catch(()=>{});
-  try{if(db)await record('music','put',{id:'bgm',data:f});}catch{hint('这首音乐仅在本次打开时可用。');}
-};
-el('music-play').onclick=()=>audio.paused?audio.play().catch(()=>hint('无法播放这份音乐文件。')):audio.pause();
-audio.onplay=()=>el('music-play').textContent='暂停';
-audio.onpause=()=>el('music-play').textContent='播放';
+preloadAlbum();
 
 </script>
 </body></html>
