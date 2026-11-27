@@ -56,7 +56,19 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
 @media(max-height:500px) and (min-width:521px){.mast{inset:10px 15px auto}.mode-label{top:0}.preview{width:102px}.bottom{bottom:5px}.tools button{padding:5px 9px}.focus-frame img{max-height:60vh}}
 @media(max-width:820px) and (min-height:501px){#wall{inset:104px 5vw 150px}}
 @media(max-height:500px){#wall{inset:58px clamp(40px,14vw,130px) 40px}}
-@media(prefers-reduced-motion:no-preference){#stage[data-mode="photo"] .focus-frame{animation:reveal .24s ease-out both}#stage[data-mode="all"] .galaxy-card{animation:appear .22s ease-out both}@keyframes reveal{from{opacity:.2;scale:.95}}@keyframes appear{from{opacity:.15}}}
+@media(prefers-reduced-motion:no-preference){
+  #spotlight .focus-frame.is-opening{animation:photo-develop 480ms cubic-bezier(.18,.78,.26,1)}
+  .focus-frame.is-opening::before,.focus-frame.is-opening::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0}
+  .focus-frame.is-opening::before{border:1px solid #fff1bb;box-shadow:inset 0 0 10px 2px #ffd071a6;animation:frame-glow 680ms ease-out}
+  .focus-frame.is-opening::after{background:linear-gradient(110deg,transparent 37%,#ffdfa526 47%,#fff4d554 50%,transparent 60%);animation:light-sweep 620ms ease-out}
+  #stage[data-mode="all"] .galaxy-card{animation:album-appear 380ms ease-out var(--open-delay,0ms) backwards}
+  #stage[data-mode="all"] .galaxy-card img{animation:album-develop 420ms ease-out var(--open-delay,0ms) backwards}
+  @keyframes photo-develop{from{opacity:.24;transform:translateY(9px) scale(.91)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes frame-glow{0%{opacity:0}25%{opacity:.95}100%{opacity:0}}
+  @keyframes light-sweep{0%{opacity:0;transform:translateX(-82%)}22%{opacity:.75}100%{opacity:0;transform:translateX(86%)}}
+  @keyframes album-appear{from{opacity:.08}to{opacity:1}}
+  @keyframes album-develop{from{transform:scale(.94)}to{transform:scale(1)}}
+}
 </style>
 </head>
 <body>
@@ -67,7 +79,8 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
     <div id="mode-label" class="mode-label pill" role="status">星光聚成树</div>
     <button id="camera-toggle" class="camera-toggle pill" aria-pressed="false"><span class="dot"></span><span id="camera-state">开启手势</span></button>
   </header>
-  <div id="spotlight" hidden><div class="focus-frame"><img id="focus-photo" alt="随机抽取的相册照片"></div></div>
+  <div id="spotlight" hidden></div>
+  <template id="photo-template"><div class="focus-frame"><img id="focus-photo" alt="随机抽取的相册照片"></div></template>
   <div id="wall" role="group" aria-label="银河相册，展示所有照片" hidden></div>
   <aside class="preview" aria-label="手势摄像头预览"><span class="preview-title" lang="en">GESTURE CAM</span><div class="feed"><video id="video" muted playsinline autoplay></video><canvas id="skeleton" hidden></canvas><button id="camera-start">开启镜头</button></div></aside>
   <nav class="bottom" aria-label="场景操作">
@@ -816,6 +829,16 @@ function drawPhoto() {
   return lastPhoto;
 }
 
+function openPhoto(photo) {
+  // Each draw gets its own frame, so a late image load cannot restart the next photo's reveal.
+  const frame = el('photo-template').content.firstElementChild.cloneNode(true);
+  const img = frame.querySelector('img');
+  img.addEventListener('load', () => frame.classList.add('is-opening'), {once:true});
+  img.src = photo.src;
+  el('spotlight').replaceChildren(frame);
+  if (img.complete && img.naturalWidth) frame.classList.add('is-opening');
+}
+
 function hint(message) {
   const toast = document.querySelector('.toast');
   clearTimeout(toastTimer);
@@ -846,6 +869,7 @@ function arrangeAlbum() {
   positions = [];
   const separation = 1.25 / Math.sqrt(photos.length);
   for (const card of shuffle(Array.from(wall.children))) {
+    card.style.setProperty('--open-delay', Math.round(200*positions.length/photos.length)+'ms');
     const widthFactor = Number(card.style.getPropertyValue('--width-factor'));
     let spot, bestGap = -1;
     for (let attempt=0; attempt<48; attempt++) {
@@ -937,7 +961,7 @@ function showMode(mode) {
   if (changed) syncAlbumAnimation();
   let label;
   if (mode === 'photo') {
-    el('focus-photo').src = drawPhoto().src;
+    openPhoto(drawPhoto());
     label = 'OK · 一张回忆正在发光';
   } else if (mode === 'all') {
     label = '十指张开 · 银河相册';
@@ -948,7 +972,7 @@ function showMode(mode) {
   }
   el('mode-label').textContent = label;
   const descriptions = {tree:'挂着礼盒的金色圣诞树', photo:'绕着照片转动的星光',
-    galaxy:'由树上星点和礼盒组成的立体星球，可用单手拨动', all:'沿银河旋臂流动的星光与相册'};
+    galaxy:'由树上星点和礼盒组成的立体星球，可用单手拨动', all:'随机散落在旋转金色星光中的相册照片'};
   if (changed) el('stars').setAttribute('aria-label', descriptions[mode]);
   document.querySelectorAll('.tools [data-mode]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.mode === mode)));
