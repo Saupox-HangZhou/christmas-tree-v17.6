@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#180d11">
 <link rel="canonical" href="https://saupox-hangzhou.github.io/christmas-tree-v17.6/?v=a9ca1de&amp;to=YYJ520">
-<meta name="description" content="张开手掌让圣诞树散成银河，捏出 OK 抽一张照片，十指张开看整本相册。">
+<meta name="description" content="张开手掌让圣诞树散成立体星球，用手轻拨星球，捏出 OK 抽一张照片，十指张开看整本相册。">
 <title>圣诞 · 星光许愿树</title>
 <style>
 :root{color-scheme:dark;--gold:#ffdfa7;--soft:#d9bc93;--edge:#b8935b65;--glass:#160d10da;--pad:clamp(18px,3.8vw,70px);font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;color:#fff1d5;background:#130b10}
@@ -69,12 +69,12 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
     <button id="camera-toggle" class="camera-toggle pill" aria-pressed="false"><span class="dot"></span><span id="camera-state">开启手势</span></button>
   </header>
   <div id="spotlight" hidden><div class="focus-frame"><img id="focus-photo" alt="正在展示的照片"></div><div id="photo-count" class="photo-count"></div></div>
-  <div id="wall" role="group" aria-label="银河相册，全部十二张照片" hidden></div>
+  <div id="wall" role="group" aria-label="星球相册，全部十二张照片" hidden></div>
   <aside class="preview" aria-label="手势摄像头预览"><span class="preview-title" lang="en">GESTURE CAM</span><div class="feed"><video id="video" muted playsinline autoplay></video><canvas id="skeleton" hidden></canvas><button id="camera-start">开启镜头</button></div></aside>
   <nav class="bottom" aria-label="场景操作">
     <div class="tools">
       <button data-mode="tree" aria-pressed="true">聚成树</button>
-      <button data-mode="galaxy" aria-pressed="false" title="单手张开，把圣诞树打散成银河">五指 · 打散树</button>
+      <button data-mode="galaxy" aria-pressed="false" title="单手张开，把圣诞树打散成星球">五指 · 星球</button>
       <button data-mode="photo" aria-pressed="false" title="拇指与食指捏成 OK">OK 抽一张</button>
       <button data-mode="all" aria-pressed="false">十指 · 全部照片</button>
       <button id="full">全屏<span class="shortcut">F</span></button>
@@ -94,7 +94,7 @@ const COMET_TAIL = .30; // Fraction of the trip up the tree retained in the trai
 const COMET_SAMPLES = 256;
 const COMET_COLORS = [[1,.65,.23],[.43,.94,.81],[1,.43,.52]];
 const PHOTO_SPEED = TAU / 24;
-const GALAXY_SPEED = TAU / 40;
+const GALAXY_SPEED = TAU / 54;
 const MODES = {tree: 0, photo: 1, galaxy: 2};
 const STRIDE = 13;
 const PALETTE = [
@@ -103,14 +103,13 @@ const PALETTE = [
 ];
 const GALAXY_COLORS=[[1,.88,.67],[.78,.87,1],[.47,.69,1],[.94,.76,.83]];
 const TREE_SKY='radial-gradient(ellipse 54% 68% at 50% 62%, rgba(128,64,30,.90) 0%, rgba(86,43,29,.76) 41%, rgba(34,17,21,.43) 75%, transparent 100%), linear-gradient(180deg,#0c0911,#211116 59%,#100a0d)';
-const GALAXY_SKY='radial-gradient(ellipse 21% 19% at 50% 51%, #8e6b514f, transparent 100%), radial-gradient(ellipse 49% 36% at 53% 48%, #4357766b, transparent 100%), radial-gradient(ellipse 40% 45% at 28% 65%, #44394c77, transparent 100%), linear-gradient(155deg,#070b15,#101a2a 52%,#0a0c17)';
 
 function layout(width, height) {
     // Scale the drawing with the available stage, including when a phone turns sideways.
     const treeHeight = Math.min(height * .63, width * 1.02);
     return {
         treeWidth: treeHeight * .423, treeHeight, treeBase: height * .55 + treeHeight * .54,
-        galaxyWidth: width*.55, galaxyHeight: height*.64,
+        sphereRadius: Math.min(width*.425,height*.365),
         centerY: height * .509,
         // Even landscape photos leave visible arcs down both sides of the frame.
         photoWidth: Math.min(width * .57, Math.max(width * .455, height * .73)),
@@ -136,15 +135,11 @@ function makeField(count) {
         const angle = random() * TAU;
         const ring = random() < .8 ? .86 + jitter() * .27 : Math.sqrt(random()) * 1.16;
         const photo = [Math.cos(angle) * ring, Math.sin(angle) * ring, random()];
-        // A compact bulge, loose spiral arms and a diffuse halo share the same
-        // inclined disk. Thickness breaks up the arms and supplies parallax.
-        const family=random();
-        const orbitRadius=family<.17 ? .34*random()**.88 : .08+1.13*Math.sqrt(random());
-        const azimuth=family>=.17 && family<.65
-            ? (i%3)*TAU/3 + 2.75*Math.log1p(4*orbitRadius) + jitter()*(.40+.42*orbitRadius)
-            : TAU*random();
-        const thickness=family>.79 ? .91 : .13+.17/(1+5*orbitRadius);
-        const galaxy=[orbitRadius*Math.cos(azimuth),orbitRadius*Math.sin(azimuth),jitter()*thickness];
+        // Uniform area sampling leaves the two poles as populated as the equator.
+        const latitude=random()*2-1, longitude=TAU*random();
+        const shellRadius=random()<.88 ? .972+.028*random() : .89*Math.cbrt(random());
+        const latitudeRing=shellRadius*Math.sqrt(1-latitude*latitude);
+        const galaxy=[latitudeRing*Math.cos(longitude),latitude*shellRadius,latitudeRing*Math.sin(longitude)];
         const n = random(), k = random();
         const kind = n < .077 ? 1 : n < .148 ? 2 : n < .193 ? 3 : 0;
         const diameter = kind === 1 ? 3.7 + 8.5 * random() ** 2 :
@@ -168,7 +163,7 @@ function makeField(count) {
         }
     }
     // The topper and wrapped presents own galaxy positions just like the lights.
-    data.push(0, 1.052, 0, 0, 0, 0, -.52,-.42,.12, 43, 5, 2, .1);
+    data.push(0, 1.052, 0, 0, 0, 0, -.49,-.65,.58, 43, 5, 2, .1);
     // Lay down the dim tail first and the hot leading point last.
     for (let strand=0; strand<3; strand++) {
         for (let sample=COMET_SAMPLES-1; sample>=0; sample--) {
@@ -184,9 +179,10 @@ function makeField(count) {
             const radius = depth*.89;
             const height = 1-depth + .025*Math.sin(i*2.4+angle);
             const wrap = (i+Math.round(10*depth)) % 3;
-            const orbit=goldenAngle*giftIndex++, spread=.37+.48*random();
+            const latitude=1-2*(giftIndex+.5)/15, orbit=goldenAngle*giftIndex++;
+            const spread=Math.sqrt(1-latitude*latitude);
             data.push(Math.cos(angle)*radius,height,Math.sin(angle)*radius, 0,0,0,
-                spread*Math.cos(orbit),spread*Math.sin(orbit),jitter()*.24,
+                spread*Math.cos(orbit),latitude,spread*Math.sin(orbit),
                 26+10*depth,7,wrap,random());
         }
     }
@@ -201,6 +197,8 @@ attribute vec4 aSprite;
 uniform vec2 uViewport;
 uniform vec2 uSkyRotation;
 uniform vec4 uOrbit;
+uniform vec2 uPitch;
+uniform vec3 uHand;
 uniform vec2 uScatter;
 uniform vec3 uTree;
 uniform vec4 uOther;
@@ -225,10 +223,10 @@ void main() {
     if(aSprite.y==8.) {
         float strand=aTree.x, age=aTree.y;
         float h=fract(time/${COMET_PERIOD.toFixed(1)}+.21+strand/3.-age*${COMET_TAIL});
-        float angle=6.283185*(h*${COMET_TURNS}+strand/3.)+.115*time;
+        float angle=6.283185*(h*${COMET_TURNS}+strand/3.)+.115*time-uHand.x;
         float radius=.045+1.075*(1.-h), depth=sin(angle)*radius;
         vec2 p=vec2(uViewport.x*.5+cos(angle)*radius*uTree.x,
-                    uTree.z-h*uTree.y+depth*uTree.y*.065);
+                    uTree.z-.5*uTree.y+(.5-h)*uTree.y*uHand.z+depth*(uTree.y*.065+uTree.x*uHand.y));
         float head=exp(-age*60.), fade=(1.-age)*(1.-age);
         vKind=8.;
         vColor=strand<.5 ? vec3(${COMET_COLORS[0].map(n=>n.toFixed(2)).join(',')}) :
@@ -239,10 +237,11 @@ void main() {
         gl_PointSize=clamp((4.+8.*(1.-age)+13.*head)*uFrame.z*uFrame.y,1.,uFrame.w);
         return;
     }
-    float spin = time * .115;
+    float spin = time * .115-uHand.x;
     float z = aTree.x * sin(spin) + aTree.z * cos(spin);
     float x = aTree.x * cos(spin) - aTree.z * sin(spin);
-    vec2 tree = vec2(uViewport.x*.5+x*uTree.x, uTree.z-aTree.y*uTree.y+z*uTree.y*.024);
+    vec2 tree = vec2(uViewport.x*.5+x*uTree.x,
+        uTree.z-.5*uTree.y+(.5-aTree.y)*uTree.y*uHand.z+z*(uTree.y*.024+uTree.x*uHand.y));
     // Four overlapping departure waves. Reversing the gesture runs every item
     // back along its own arc, including when the reversal happens mid-flight.
     float delay=floor(aSprite.w*4.)*.065;
@@ -252,6 +251,7 @@ void main() {
     vec2 origin=tree;
     if(uWeight.y>0.) {
         vec2 orbit=vec2(aPhoto.x*uOrbit.x-aPhoto.y*uOrbit.y,aPhoto.x*uOrbit.y+aPhoto.y*uOrbit.x);
+        orbit.y=orbit.y*uHand.z + .25*sin(phase)*uHand.y;
         if(!ornament) origin=mix(tree,vec2(uViewport.x*.5,uCenterY)+orbit*uOther.xy,photoShare);
     }
     vec2 p=origin;
@@ -262,24 +262,27 @@ void main() {
     float depth = 1. + z*.22*uWeight.x;
     vAlpha = (.73 + .42*aSprite.w) * brightness * depth;
     float size = aSprite.x * uFrame.z * depth;
+    float ornamentLight=1., ornamentSize=1.;
     if(spread>0. && (aSprite.y<4. || ornament)) {
         vec3 shuffled=aGalaxy+vec3(.13*sin(phase)*uScatter.x,.13*cos(phase)*uScatter.y,.14*(aSprite.w-.5)*uScatter.x);
-        float gx=shuffled.x*uOrbit.z-shuffled.y*uOrbit.w, gy=shuffled.x*uOrbit.w+shuffled.y*uOrbit.z;
-        float gyTilt=gy*.67-shuffled.z*.74, distance=gy*.74+shuffled.z*.67;
-        vec2 disk=vec2(.946*gx+.323*gyTilt,-.323*gx+.946*gyTilt)/(1.-.22*distance);
-        vec2 offset=disk*uOther.zw;
-        // Give foreground ornaments a slightly smaller orbit, so even the
-        // nearest presents stay visible as the disk swings towards the viewer.
-        if(ornament) offset/=1.+abs(offset)/uViewport;
+        shuffled*=length(aGalaxy)/max(.00001,length(shuffled));
+        shuffled.xz=vec2(shuffled.x*uScatter.y+shuffled.z*uScatter.x,shuffled.z*uScatter.y-shuffled.x*uScatter.x);
+        float gx=shuffled.x*uOrbit.z+shuffled.z*uOrbit.w, gz=shuffled.z*uOrbit.z-shuffled.x*uOrbit.w;
+        float gy=shuffled.y*uPitch.x+gz*uPitch.y, distance=gz*uPitch.x-shuffled.y*uPitch.y;
+        vec2 offset=vec2(gx,gy)*uOther.z/(1.-.18*distance);
         vec2 delta=vec2(uViewport.x*.5,uCenterY)+offset-origin;
         float bend=4.*spread*(1.-spread)*(.12+.15*aSprite.w);
         p=origin+delta*spread+vec2(-delta.y,delta.x)*uViewport/uViewport.yx*bend;
-        float proximity=clamp(.9+.40*distance,.42,1.48);
+        float proximity=clamp(.94+.48*distance,.38,1.5);
+        float light=clamp(.56+.60*distance-.16*gx-.18*gy,.14,1.32)
+              +.28*pow(max(0.,1.-abs(distance)),4.);
+        ornamentLight=mix(1.,.67+.32*distance,spread);
+        ornamentSize=mix(1.,.90+.21*distance,spread);
         float core=dot(aGalaxy.xy,aGalaxy.xy);
         vec3 starlight=core<.075 || aSprite.w<.23 ? vec3(1.,.88,.67)
             : aSprite.w<.71 ? vec3(.78,.87,1.) : aSprite.w<.89 ? vec3(.47,.69,1.) : vec3(.94,.76,.83);
         if(aSprite.y==0.) vColor=mix(vColor,starlight,.65*spread);
-        vAlpha*=mix(1.,proximity,spread);
+        vAlpha*=mix(1.,light,spread);
         size*=mix(1.,proximity,spread);
     }
     if(vKind == 4. || vKind == 6.) {
@@ -291,13 +294,13 @@ void main() {
         vAlpha = vKind==4. ? .12+.12*aSprite.w : .36+.40*brightness;
     }
     if(vKind == 5.) {
-        vAlpha = spread+(1.-spread)*(1.-photoShare);
-        size=aSprite.x*uFrame.z*mix(1.,.53,spread);
+        vAlpha = (spread+(1.-spread)*(1.-photoShare))*ornamentLight;
+        size=aSprite.x*uFrame.z*mix(1.,.53,spread)*ornamentSize;
     }
     if(vKind == 7.) {
         vPhase = aSprite.z;
-        vAlpha = (spread+(1.-spread)*(1.-photoShare))*(.88+.12*z);
-        size = max(23.,aSprite.x*uFrame.z)*(1.+.12*z)*mix(1.,.62,spread);
+        vAlpha = (spread+(1.-spread)*(1.-photoShare))*(.88+.12*z)*ornamentLight;
+        size = max(23.,aSprite.x*uFrame.z)*(1.+.12*z)*mix(1.,.62,spread)*ornamentSize;
     }
     gl_Position = vec4(p/uViewport*vec2(2.,-2.)+vec2(-1.,1.),0.,1.);
     gl_PointSize = clamp(size*uFrame.y, 1., uFrame.w);
@@ -434,7 +437,7 @@ function gpuRenderer(gl, field) {
         gl.enableVertexAttribArray(location);
         gl.vertexAttribPointer(location, size, gl.FLOAT, false, STRIDE*4, offset*4);
     }
-    const uniform = Object.fromEntries(['Viewport','SkyRotation','Orbit','Scatter','Tree','Other','Weight','Frame','CenterY','Gifts']
+    const uniform = Object.fromEntries(['Viewport','SkyRotation','Orbit','Pitch','Hand','Scatter','Tree','Other','Weight','Frame','CenterY','Gifts']
         .map(key => [key, gl.getUniformLocation(program, 'u'+key)]));
     const gifts=gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D,gifts);
@@ -451,16 +454,19 @@ function gpuRenderer(gl, field) {
     gl.enable(gl.BLEND);
     gl.clearColor(0,0,0,0);
     return {
-        draw(w, h, ratio, l, weights, time, skyCos, skySin, shuffle=0) {
+        draw(w, h, ratio, l, weights, time, skyCos, skySin, shuffle=0, handYaw=0, handPitch=0) {
             gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.uniform2f(uniform.Viewport, w, h);
             gl.uniform2f(uniform.SkyRotation, skyCos, skySin);
-            gl.uniform4f(uniform.Orbit,Math.cos(time*PHOTO_SPEED),Math.sin(time*PHOTO_SPEED),
-                Math.cos(time*GALAXY_SPEED+shuffle),Math.sin(time*GALAXY_SPEED+shuffle));
+            const photoAngle=time*PHOTO_SPEED+.6*handYaw, yaw=time*GALAXY_SPEED+handYaw;
+            const pitch=-.14+handPitch, treePitch=handPitch*.32;
+            gl.uniform4f(uniform.Orbit,Math.cos(photoAngle),Math.sin(photoAngle),Math.cos(yaw),Math.sin(yaw));
+            gl.uniform2f(uniform.Pitch,Math.cos(pitch),Math.sin(pitch));
+            gl.uniform3f(uniform.Hand,handYaw,Math.sin(treePitch),Math.cos(treePitch));
             gl.uniform2f(uniform.Scatter,Math.sin(shuffle),Math.cos(shuffle));
             gl.uniform3f(uniform.Tree, l.treeWidth, l.treeHeight, l.treeBase);
-            gl.uniform4f(uniform.Other, l.photoWidth, l.photoHeight, l.galaxyWidth, l.galaxyHeight);
+            gl.uniform4f(uniform.Other, l.photoWidth, l.photoHeight, l.sphereRadius, l.sphereRadius);
             gl.uniform1f(uniform.CenterY, l.centerY);
             gl.uniform3fv(uniform.Weight, weights);
             gl.uniform4f(uniform.Frame, time, ratio, l.dotScale, maxSize);
@@ -479,6 +485,8 @@ function gpuRenderer(gl, field) {
 function canvasRenderer(canvas, field) {
     const ctx = canvas.getContext('2d');
     const gifts = makeGiftAtlas();
+    const sphere=new Float32Array(field.length/STRIDE*3);
+    let cachedShuffle=NaN;
     const atlas = document.createElement('canvas');
     const cell = 64;
     const cometAtlas = document.createElement('canvas');
@@ -520,28 +528,45 @@ function canvasRenderer(canvas, field) {
         });
     }
     return {
-        draw(w, h, ratio, l, weights, time, skyCos, skySin, shuffle=0) {
+        draw(w, h, ratio, l, weights, time, skyCos, skySin, shuffle=0, handYaw=0, handPitch=0) {
             ctx.setTransform(ratio,0,0,ratio,0,0);
             ctx.clearRect(0,0,w,h);
-            const co=Math.cos(time*.115), si=Math.sin(time*.115);
-            const photoCos=Math.cos(time*PHOTO_SPEED), photoSin=Math.sin(time*PHOTO_SPEED);
-            const galaxyCos=Math.cos(time*GALAXY_SPEED+shuffle), galaxySin=Math.sin(time*GALAXY_SPEED+shuffle);
+            const co=Math.cos(time*.115-handYaw), si=Math.sin(time*.115-handYaw);
+            const treePitchSin=Math.sin(handPitch*.32), treePitchCos=Math.cos(handPitch*.32);
+            const photoAngle=time*PHOTO_SPEED+.6*handYaw;
+            const photoCos=Math.cos(photoAngle), photoSin=Math.sin(photoAngle);
+            const yaw=time*GALAXY_SPEED+handYaw, pitch=-.14+handPitch;
+            const yawCos=Math.cos(yaw), yawSin=Math.sin(yaw), pitchCos=Math.cos(pitch), pitchSin=Math.sin(pitch);
             const shuffleX=Math.sin(shuffle), shuffleY=Math.cos(shuffle);
+            if(weights[2]>0 && shuffle!==cachedShuffle) {
+                cachedShuffle=shuffle;
+                for(let i=0,j=0;i<field.length;i+=STRIDE,j+=3) {
+                    const seed=field[i+12],phase=seed*TAU;
+                    const ox=field[i+6]+.13*Math.sin(phase)*shuffleX;
+                    const oy=field[i+7]+.13*Math.cos(phase)*shuffleY;
+                    const oz=field[i+8]+.14*(seed-.5)*shuffleX;
+                    const norm=Math.hypot(field[i+6],field[i+7],field[i+8])/Math.max(.00001,Math.hypot(ox,oy,oz));
+                    sphere[j]=(ox*shuffleY+oz*shuffleX)*norm;
+                    sphere[j+1]=oy*norm;
+                    sphere[j+2]=(oz*shuffleY-ox*shuffleX)*norm;
+                }
+            }
             const photoShare=Math.min(1,Math.max(0,weights[1]/Math.max(.00001,1-weights[2])));
-            for (let i=0;i<field.length;i+=STRIDE) {
+            for (let i=0,j=0;i<field.length;i+=STRIDE,j+=3) {
                 const kind=field[i+10], seed=field[i+12];
                 let x, y, alpha, size=field[i+9]*l.dotScale;
                 const colorColumn=field[i+11];
-                let tintColumn=0, tintWeight=0;
+                let tintColumn=0, tintWeight=0, ornamentLight=1, ornamentSize=1;
                 if (kind===8) {
                     if (weights[0]<=0) continue;
                     const strand=field[i], age=field[i+1];
                     const cycle=time/COMET_PERIOD+.21+strand/3-age*COMET_TAIL;
                     const h=cycle-Math.floor(cycle);
-                    const angle=TAU*(h*COMET_TURNS+strand/3)+.115*time;
+                    const angle=TAU*(h*COMET_TURNS+strand/3)+.115*time-handYaw;
                     const radius=.045+1.075*(1-h), sin=Math.sin(angle);
                     x=w/2+Math.cos(angle)*radius*l.treeWidth;
-                    y=l.treeBase-h*l.treeHeight+sin*radius*l.treeHeight*.065;
+                    y=l.treeBase-.5*l.treeHeight+(.5-h)*l.treeHeight*treePitchCos
+                        +sin*radius*(l.treeHeight*.065+l.treeWidth*treePitchSin);
                     const edge=Math.min(1,Math.min(h,1-h)/.025);
                     ctx.globalAlpha=weights[0]*(.34+.66*(.5+.5*sin))*(.46+.54*edge*edge*(3-2*edge))*(1-age)**2;
                     size=(4+8*(1-age)+13*Math.exp(-age*60))*l.dotScale;
@@ -553,35 +578,34 @@ function canvasRenderer(canvas, field) {
                     alpha=kind===4?.13:.67;
                 } else {
                     const treeX=w/2+(field[i]*co-field[i+2]*si)*l.treeWidth;
-                    const treeY=l.treeBase-field[i+1]*l.treeHeight+(field[i]*si+field[i+2]*co)*.024*l.treeHeight;
+                    const treeY=l.treeBase-.5*l.treeHeight+(.5-field[i+1])*l.treeHeight*treePitchCos
+                        +(field[i]*si+field[i+2]*co)*(.024*l.treeHeight+l.treeWidth*treePitchSin);
                     const ornament=kind===5 || kind===7;
                     const t=Math.min(1,Math.max(0,(weights[2]-Math.floor(seed*4)*.065)/.805));
                     const spread=t*t*(3-2*t);
                     x=treeX; y=treeY;
                     if(!ornament && photoShare>0) {
                         const px=field[i+3]*photoCos-field[i+4]*photoSin;
-                        const py=field[i+3]*photoSin+field[i+4]*photoCos;
+                        const py=(field[i+3]*photoSin+field[i+4]*photoCos)*treePitchCos+.25*Math.sin(seed*TAU)*treePitchSin;
                         x+=(w/2+px*l.photoWidth-treeX)*photoShare;
                         y+=(l.centerY+py*l.photoHeight-treeY)*photoShare;
                     }
                     alpha=.56+.35*Math.sin(time*1.5+seed*32);
                     if(spread>0) {
-                        const ox=field[i+6]+.13*Math.sin(seed*TAU)*shuffleX;
-                        const oy=field[i+7]+.13*Math.cos(seed*TAU)*shuffleY;
-                        const oz=field[i+8]+.14*(seed-.5)*shuffleX;
-                        const gx=ox*galaxyCos-oy*galaxySin, gy=ox*galaxySin+oy*galaxyCos;
-                        const gyTilt=gy*.67-oz*.74, distance=gy*.74+oz*.67, scale=1/(1-.22*distance);
-                        let offsetX=(.946*gx+.323*gyTilt)*scale*l.galaxyWidth;
-                        let offsetY=(-.323*gx+.946*gyTilt)*scale*l.galaxyHeight;
-                        if(ornament) {
-                            offsetX/=1+Math.abs(offsetX)/w;
-                            offsetY/=1+Math.abs(offsetY)/h;
-                        }
+                        const ox=sphere[j], oy=sphere[j+1], oz=sphere[j+2];
+                        const gx=ox*yawCos+oz*yawSin, gz=oz*yawCos-ox*yawSin;
+                        const gy=oy*pitchCos+gz*pitchSin, distance=gz*pitchCos-oy*pitchSin;
+                        const scale=l.sphereRadius/(1-.18*distance);
+                        const offsetX=gx*scale, offsetY=gy*scale;
                         const dx=w/2+offsetX-x, dy=l.centerY+offsetY-y;
                         const bend=4*spread*(1-spread)*(.12+.15*seed);
                         x+=dx*spread-dy*(w/h)*bend; y+=dy*spread+dx*(h/w)*bend;
-                        const proximity=Math.min(1.48,Math.max(.42,.9+.4*distance));
-                        alpha=Math.min(1,alpha*(1+(proximity-1)*spread));
+                        const proximity=Math.min(1.5,Math.max(.38,.94+.48*distance));
+                        const light=Math.min(1.32,Math.max(.14,.56+.6*distance-.16*gx-.18*gy))
+                            +.28*Math.max(0,1-Math.abs(distance))**4;
+                        ornamentLight=1+(.67+.32*distance-1)*spread;
+                        ornamentSize=1+(.90+.21*distance-1)*spread;
+                        alpha=Math.min(1,alpha*(1+(light-1)*spread));
                         size*=1+(proximity-1)*spread;
                         if(kind===0) {
                             const radius2=field[i+6]**2+field[i+7]**2;
@@ -589,12 +613,12 @@ function canvasRenderer(canvas, field) {
                             tintColumn=PALETTE.length+tint; tintWeight=.65*spread;
                         }
                     }
-                    if(ornament) alpha=spread+(1-spread)*(1-photoShare);
-                    if(kind===5) size=field[i+9]*l.dotScale*(1-.47*spread);
+                    if(ornament) alpha=(spread+(1-spread)*(1-photoShare))*ornamentLight;
+                    if(kind===5) size=field[i+9]*l.dotScale*(1-.47*spread)*ornamentSize;
                     if(kind===7) {
                         if(alpha<.01) continue;
                         const z=field[i]*si+field[i+2]*co;
-                        size=Math.max(23,field[i+9]*l.dotScale)*(1+.12*z)*(1-.38*spread);
+                        size=Math.max(23,field[i+9]*l.dotScale)*(1+.12*z)*(1-.38*spread)*ornamentSize;
                         ctx.globalAlpha=alpha*(.88+.12*z);
                         ctx.drawImage(gifts,colorColumn*GIFT_CELL,0,GIFT_CELL,GIFT_CELL,x-size/2,y-size/2,size,size);
                         continue;
@@ -614,17 +638,7 @@ function canvasRenderer(canvas, field) {
 }
 
 function mountScene(canvas) {
-    // Paint each gradient once. Its composited opacity follows the same scalar
-    // as the particles, including a mid-flight gesture reversal.
-    const sky=document.createElement('div');
-    sky.setAttribute('aria-hidden','true');
-    sky.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden';
-    sky.style.background=TREE_SKY;
-    const galaxySky=document.createElement('div');
-    galaxySky.style.cssText='position:absolute;inset:0;opacity:0;will-change:opacity';
-    galaxySky.style.background=GALAXY_SKY;
-    sky.append(galaxySky); canvas.before(sky);
-    if(getComputedStyle(canvas).position==='static') canvas.style.position='relative';
+    canvas.style.background=TREE_SKY;
     const field = makeField(2400);
     const gl = canvas.getContext('webgl', {alpha:true, antialias:false, depth:false,
         stencil:false, powerPreference:'low-power', preserveDrawingBuffer:false});
@@ -649,7 +663,10 @@ function mountScene(canvas) {
     const weights = new Float32Array([1,0,0]);
     const startWeights = new Float32Array(weights);
     let target=0, start=0, elapsed=0, previous=0, request=0, lost=false, stopped=false;
-    let duration=440, scattering=false, shuffle=0, skyOpacity=0;
+    let duration=440, scattering=false, shuffle=0;
+    let handYaw=0, handPitch=0, yawSpeed=0, pitchSpeed=0, coastAfter=0;
+    const rotation={yaw:0,pitch:-.14};
+    const limitPitch=value=>Math.max(-1.20,Math.min(1.20,value));
     let width, height, size, ratio;
     function resize() {
         width=Math.max(1,canvas.clientWidth);
@@ -672,23 +689,34 @@ function mountScene(canvas) {
     function draw(now) {
         request=0;
         if (document.hidden || lost || stopped) return;
-        if (!motion.matches && previous) elapsed+=Math.min(.08,(now-previous)/1000);
+        const dt=previous ? Math.max(0,Math.min(.08,(now-previous)/1000)) : 0;
+        if(!motion.matches) {
+            elapsed+=dt;
+            if(now>coastAfter && (yawSpeed || pitchSpeed)) {
+                // Add momentum only after camera samples stop; delta has already
+                // moved the scene during tracking. Integrate exponential drag.
+                const coastDt=Math.min(dt,(now-coastAfter)/1000);
+                const decay=Math.exp(-coastDt/.15), travel=.15*(1-decay);
+                handYaw+=yawSpeed*travel;
+                handPitch=limitPitch(handPitch+pitchSpeed*travel);
+                yawSpeed*=decay; pitchSpeed*=decay;
+                if(Math.abs(yawSpeed)<.004) yawSpeed=0;
+                if(Math.abs(pitchSpeed)<.004) pitchSpeed=0;
+            }
+        } else { yawSpeed=0; pitchSpeed=0; }
         previous=now;
         updateWeights(now);
-        if(skyOpacity!==weights[2]) {
-            skyOpacity=weights[2];
-            galaxySky.style.opacity=String(skyOpacity);
-        }
-        const angle = elapsed * SKY_SPEED;
+        const angle = elapsed * SKY_SPEED + handYaw*.14;
         const skyRadius = Math.hypot(width,height) * .51;
-        painter.draw(width,height,ratio,size,weights,elapsed,Math.cos(angle)*skyRadius,Math.sin(angle)*skyRadius,shuffle);
+        painter.draw(width,height,ratio,size,weights,elapsed,Math.cos(angle)*skyRadius,Math.sin(angle)*skyRadius,
+            shuffle,handYaw,handPitch);
         if (!motion.matches) wake();
     }
     function wake() {
         if (!request && !document.hidden && !lost && !stopped) request=requestAnimationFrame(draw);
     }
     function visibility() {
-        previous=0;
+        previous=0; yawSpeed=0; pitchSpeed=0;
         if(document.hidden) { cancelAnimationFrame(request); request=0; } else wake();
     }
     function contextLost(event) {
@@ -705,6 +733,29 @@ function mountScene(canvas) {
     canvas.addEventListener('webglcontextlost',contextLost);
     canvas.addEventListener('webglcontextrestored',contextRestored);
     return {
+        nudge(dx,dy,dt) {
+            if(stopped || document.hidden || !Number.isFinite(dx) || !Number.isFinite(dy) ||
+               !Number.isFinite(dt) || dt<=0 || dt>.25) return;
+            // The tracker already applies a spatial dead zone. Preserve every
+            // remaining small delta so slow, steady hand movement accumulates.
+            const length=Math.hypot(dx,dy);
+            if(length===0) return;
+            const travel=Math.min(length,.18,3.8*dt)/length;
+            const yawDelta=dx*travel*4.8, pitchDelta=dy*travel*3.8;
+            handYaw+=yawDelta; handPitch=limitPitch(handPitch+pitchDelta);
+            const gain=1-Math.exp(-dt/.046);
+            yawSpeed+=(Math.max(-5,Math.min(5,yawDelta/dt))-yawSpeed)*gain;
+            pitchSpeed+=(Math.max(-4,Math.min(4,pitchDelta/dt))-pitchSpeed)*gain;
+            coastAfter=performance.now()+Math.max(45,Math.min(95,dt*1500));
+            wake();
+        },
+        // Screen axes are right/down, with +z toward the viewer; positive
+        // yaw/pitch brings a near-side point right/down. Returned object is reused.
+        getRotation() {
+            rotation.yaw=elapsed*GALAXY_SPEED+handYaw;
+            rotation.pitch=-.14+handPitch;
+            return rotation;
+        },
         setMode(mode) {
             if (!Object.hasOwn(MODES,mode) || MODES[mode]===target) return;
             const now=performance.now();
@@ -722,7 +773,7 @@ function mountScene(canvas) {
             document.removeEventListener('visibilitychange',visibility);
             canvas.removeEventListener('webglcontextlost',contextLost);
             canvas.removeEventListener('webglcontextrestored',contextRestored);
-            painter.dispose(); fallbackCanvas?.remove(); sky.remove();
+            painter.dispose(); fallbackCanvas?.remove();
         }
     };
 }
@@ -738,13 +789,16 @@ const photos = Array.from({length:12}, (_, index) =>
 let session = null, cameraOn = false, toastTimer;
 let remainingPhotos = [], lastPhoto = null;
 
+function shuffle(items) {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+}
 function drawPhoto() {
   if (!remainingPhotos.length) {
-    remainingPhotos = photos.map((_, index) => index + 1);
-    for (let i = remainingPhotos.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [remainingPhotos[i], remainingPhotos[j]] = [remainingPhotos[j], remainingPhotos[i]];
-    }
+    remainingPhotos = shuffle(photos.map((_, index) => index + 1));
     const first = remainingPhotos.length - 1;
     if (remainingPhotos[first] === lastPhoto && first > 0) {
       const j = Math.floor(Math.random() * first);
@@ -765,8 +819,8 @@ function hint(message) {
 
 const wall = el('wall'), motion = matchMedia('(prefers-reduced-motion: reduce)');
 const circle = Math.PI * 2;
-let positions = [], nearest = 1, orbitAngle = 0, lastFrame = 0, orbitFrame = 0;
-let cx = 0, cy = 0, rx = 0, ry = 0;
+let positions = [], orbitFrame = 0, lastFrame = 0;
+let cx = 0, cy = 0, radius = 0, cardSize = 0, wallWidth = 0, wallHeight = 0;
 
 function arrangeAlbum() {
   if (!wall.childElementCount) {
@@ -774,52 +828,77 @@ function arrangeAlbum() {
       const card = document.createElement('div'), img = new Image();
       card.className = 'galaxy-card';
       img.src = url;
-      img.alt = `银河相册，第 ${index + 1} 张照片`;
+      img.alt = `星球相册，第 ${index + 1} 张照片`;
       card.append(img);
       wall.append(card);
     }
   }
-  // Choose well-separated random points in the disk so all portraits stay visible as it turns.
-  positions = [];
-  nearest = 2;
-  for (const card of wall.children) {
-    let best, bestDistance = -1;
-    for (let i = 0; i < 64; i++) {
-      const angle = Math.random() * circle, radius = Math.sqrt(Math.random());
-      const x = radius * Math.cos(angle), y = radius * Math.sin(angle);
-      const distance = positions.reduce((d, p) => Math.min(d, Math.hypot(x-p.x, y-p.y)), 2);
-      if (distance > bestDistance) { best = {card, x, y}; bestDistance = distance; }
-    }
-    positions.push(best);
-    nearest = Math.min(nearest, bestDistance);
-  }
-  orbitAngle = 0;
+  const phase = Math.random() * circle;
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+  positions = shuffle(Array.from(wall.children)).map((card, i) => {
+    const y = 1 - 2*(i+.5)/photos.length, ring = Math.sqrt(1-y*y);
+    const angle = phase + i*goldenAngle;
+    return {card, x:ring*Math.cos(angle), y, z:ring*Math.sin(angle)};
+  });
   sizeAlbum();
 }
 
 function sizeAlbum() {
   if (wall.hidden) return;
-  cx = wall.clientWidth / 2; cy = wall.clientHeight / 2;
-  rx = Math.max(1, cx * .85); ry = Math.max(1, cy * .84);
-  // A card has to fit between its neighbours at every possible angle of rotation.
-  const size = Math.min(150, .95 * nearest / Math.hypot(1/rx, 1/(.83*ry)), 2*(cx-rx), 1.66*(cy-ry));
-  wall.style.setProperty('--card-size', size + 'px');
-  drawAlbum();
+  const rect = wall.getBoundingClientRect();
+  wallWidth = rect.width; wallHeight = rect.height;
+  cx = stage.clientWidth * .5 - rect.left; cy = stage.clientHeight * .509 - rect.top;
+  radius = Math.min(stage.clientWidth*.425, stage.clientHeight*.365);
+  cardSize = Math.min(140, radius*.31, wallWidth*.18, wallHeight*.18);
+  wall.style.setProperty('--card-size', cardSize + 'px');
+  drawAlbum(1);
 }
 
-function drawAlbum() {
-  const c = Math.cos(orbitAngle), s = Math.sin(orbitAngle);
-  for (const {card, x, y} of positions) {
-    const left = cx + (x*c - y*s) * rx, top = cy + (x*s + y*c) * ry;
-    card.style.transform = `translate3d(${left.toFixed(2)}px,${top.toFixed(2)}px,0) translate(-50%,-50%)`;
+function drawAlbum(blend) {
+  const {yaw,pitch} = scene.getRotation();
+  const c = Math.cos(yaw), s = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  for (const p of positions) {
+    const x = p.x*c + p.z*s, z = p.z*c - p.x*s;
+    const y = p.y*cp + z*sp, depth = z*cp - p.y*sp;
+    const scale = radius / (1-.18*depth);
+    const tx = cx + x*scale, ty = cy + y*scale;
+    p.left = Number.isFinite(p.left) ? p.left + blend*(tx-p.left) : tx;
+    p.top = Number.isFinite(p.top) ? p.top + blend*(ty-p.top) : ty;
+    p.scale = .89+.14*depth;
+    p.card.style.zIndex = String(Math.round(100+depth*90));
+  }
+  // When two surface locations line up in the camera, separate their frames in screen space.
+  for (let pass = 0; pass < 5; pass++) {
+    for (let i = 0; i < positions.length; i++) {
+      const a = positions[i];
+      for (let j = i+1; j < positions.length; j++) {
+        const b = positions[j], dx = b.left-a.left, dy = b.top-a.top;
+        const halfWidths = cardSize*(a.scale+b.scale)/2;
+        const overlapX = halfWidths + 4 - Math.abs(dx), overlapY = halfWidths/.83 + 4 - Math.abs(dy);
+        if (overlapX <= 0 || overlapY <= 0) continue;
+        if (overlapX < overlapY) {
+          const shift = (dx < 0 ? -1 : 1)*overlapX/2;
+          a.left -= shift; b.left += shift;
+        } else {
+          const shift = (dy < 0 ? -1 : 1)*overlapY/2;
+          a.top -= shift; b.top += shift;
+        }
+      }
+    }
+    for (const p of positions) {
+      const hw = cardSize*p.scale*.5, hh = hw/.83;
+      p.left = Math.max(hw, Math.min(wallWidth-hw, p.left));
+      p.top = Math.max(hh, Math.min(wallHeight-hh, p.top));
+    }
+  }
+  for (const p of positions) {
+    p.card.style.transform = `translate3d(${p.left.toFixed(2)}px,${p.top.toFixed(2)}px,0) translate(-50%,-50%) scale(${p.scale.toFixed(3)})`;
   }
 }
 
 function animateAlbum(time) {
-  orbitFrame = 0;
-  if (lastFrame) orbitAngle = (orbitAngle + Math.min(100, time - lastFrame) * circle / 52000) % circle;
+  drawAlbum(lastFrame ? 1-Math.exp(-Math.min(100,time-lastFrame)/65) : 1);
   lastFrame = time;
-  drawAlbum();
   orbitFrame = requestAnimationFrame(animateAlbum);
 }
 function syncAlbumAnimation() {
@@ -847,20 +926,21 @@ function showMode(mode) {
     el('photo-count').textContent = `第 ${number} 张照片`;
     label = 'OK · 一张回忆正在发光';
   } else if (mode === 'all') {
-    label = `十指张开 · ${photos.length} 张照片漫游银河`;
+    label = `十指张开 · ${photos.length} 张照片环绕星球`;
   } else if (mode === 'galaxy') {
-    label = '五指张开 · 圣诞树散作银河';
+    label = '星光成球 · 移动手掌拨动';
   } else {
     label = '星光聚成树';
   }
   el('mode-label').textContent = label;
   if (changed) el('stars').setAttribute('aria-label', mode === 'tree' ? '挂着礼盒的金色圣诞树'
-    : mode === 'photo' ? '绕着照片转动的星光' : '由圣诞树散开的星点和礼盒组成的旋转银河');
+    : mode === 'photo' ? '绕着照片转动的星光' : '由树上星点和礼盒组成的立体星球，可用单手拨动');
   document.querySelectorAll('.tools [data-mode]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.mode === mode)));
 }
 
 let okHeld = false, releaseTimer = 0, lostTimer = 0, releasedPose;
+let singleHand = false, palmAnchor = null;
 function resetPose() {
   clearTimeout(releaseTimer); clearTimeout(lostTimer);
   releaseTimer = lostTimer = 0;
@@ -872,6 +952,8 @@ function showOpenPose(pose) {
   else if (pose.count === 0) showMode('tree');
 }
 function handlePose(pose) {
+  singleHand = pose?.handCount === 1 && !pose.ok;
+  if (!singleHand) palmAnchor = null;
   if (!pose?.handCount) {
     el('camera-state').textContent = '等待手势';
     clearTimeout(releaseTimer); releaseTimer = 0;
@@ -896,6 +978,37 @@ function handlePose(pose) {
   } else showOpenPose(pose);
 }
 
+const palmJoints = [0,5,9,13,17];
+function steerWithPalm(hands) {
+  if (!cameraOn || !singleHand || okHeld || hands.length !== 1 || document.hidden) {
+    palmAnchor = null;
+    return;
+  }
+  const points = hands[0];
+  let x = 0, y = 0;
+  for (const i of palmJoints) { x += points[i].x; y += points[i].y; }
+  // The preview is mirrored. Increasing screen x should move the near side to the right.
+  x = 1 - x/palmJoints.length;
+  y /= palmJoints.length;
+  const now = performance.now();
+  if (!palmAnchor || now-palmAnchor.seen > 280 || Math.hypot(x-palmAnchor.x, y-palmAnchor.y) > .34) {
+    palmAnchor = {x, y, seen:now, moved:now};
+    return;
+  }
+  palmAnchor.seen = now;
+  const dx = x-palmAnchor.x, dy = y-palmAnchor.y;
+  const distance = Math.hypot(dx,dy);
+  // Keep a small slack around the measured centre. Slow deliberate movement still accumulates.
+  if (distance <= .006) return;
+  const gain = 1 - .006/distance;
+  const dt = Math.max(1/120, Math.min(.15,(now-palmAnchor.moved)/1000));
+  scene.nudge(dx*gain, dy*gain, dt);
+  palmAnchor.x += dx*gain; palmAnchor.y += dy*gain;
+  palmAnchor.moved = now;
+  if (!wall.hidden && motion.matches) requestAnimationFrame(() => drawAlbum(1));
+}
+document.addEventListener('visibilitychange', () => { palmAnchor = null; });
+
 const bones = [[0,1,2,3,4],[0,5,6,7,8],[5,9,13,17,0],[9,10,11,12],[13,14,15,16],[17,18,19,20]];
 function drawSkeleton(hands) {
   sketch.hidden = !hands?.length;
@@ -916,6 +1029,7 @@ function drawSkeleton(hands) {
 }
 const statusNames = {starting:'正在开启…',live:'等待手势',denied:'镜头未授权','no-device':'未找到镜头',error:'重新开启', 'model-error':'重新载入模型', 'unsupported':'浏览器不支持'};
 function setCameraStatus(status) {
+  singleHand = false; palmAnchor = null;
   cameraOn = status === 'live';
   el('camera-state').textContent = statusNames[status] || '开启手势';
   el('camera-toggle').dataset.live = String(cameraOn);
@@ -951,7 +1065,11 @@ async function toggleCamera() {
           hint(status==='denied'?'请在浏览器中允许摄像头，或点下方按钮操作。':status==='no-device'?'未检测到摄像头，可以用按钮或键盘切换。':'手势识别暂不可用，点击右上角可重试。');
         }
       },
-      hands => { if (session === current) drawSkeleton(hands); }, current.controller.signal);
+      hands => {
+        if (session !== current) return;
+        steerWithPalm(hands);
+        drawSkeleton(hands);
+      }, current.controller.signal);
     if(session!==current) current.stop?.();
   } catch {if(session===current){stopCamera();hint('摄像头暂时无法开启，可以用按钮操作。');}}
 }
