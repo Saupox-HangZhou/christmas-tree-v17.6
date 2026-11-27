@@ -35,12 +35,7 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
 #wall{z-index:1;pointer-events:none}
 .heart-card{position:absolute;display:block;width:clamp(42px,min(7.2vw,11vh),142px);aspect-ratio:.83;overflow:hidden;padding:2px;background:linear-gradient(150deg,#ffdda6,#997345 52%,#f8ce90);border:0;border-radius:8%;box-shadow:0 0 12px #fec77b3d,0 6px 22px #16091099;pointer-events:none}
 .heart-card img{display:block;width:100%;height:100%;object-fit:cover;border-radius:6%}
-#stage[data-mode="photo"],#stage[data-mode="heart"]{touch-action:pan-y pinch-zoom}
-#stage[data-mode="photo"] #stars,#stage[data-mode="heart"] #stars,.focus-frame{cursor:grab}
-.focus-frame,.heart-card{transform-origin:50% 50%;user-select:none}
-.focus-frame{transform:perspective(1200px) rotateY(var(--photo-yaw,0deg))}
-.heart-card{transform:translate(-50%,-50%) rotate(var(--card-tilt,0deg)) perspective(700px) rotateY(var(--photo-yaw,0deg))}
-.focus-frame img,.heart-card img{transform:scaleX(var(--photo-face,1));pointer-events:none;-webkit-user-drag:none}
+.heart-card{transform:translate(-50%,-50%) rotate(var(--card-tilt,0deg))}
 [hidden]{display:none!important}
 .preview{position:absolute;right:clamp(12px,2vw,36px);bottom:clamp(61px,8vh,100px);width:clamp(126px,16.5vw,290px);padding:8px;border-radius:13px;z-index:2}
 .preview-title{display:block;margin:0 0 5px 1px;font:600 10px/1 Georgia,serif;letter-spacing:.11em;color:#d6b990}
@@ -65,7 +60,7 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
 </head>
 <body>
 <main id="stage" data-mode="tree">
-  <canvas id="stars" aria-label="金色粒子圣诞树，树顶有一颗五角星"></canvas>
+  <canvas id="stars" aria-label="挂着礼盒的金色粒子圣诞树，树顶有一颗五角星"></canvas>
   <header class="mast">
     <div class="brand"><h1 id="title">圣诞 · 星光许愿树</h1><span class="english" lang="en">CHRISTMAS WISH TREE</span></div>
     <div id="mode-label" class="mode-label pill" role="status">星光聚成树</div>
@@ -93,6 +88,13 @@ const {mountScene,heartPoint} = (() => {
 // interpolation weights. The hand tracker and the scene have independent clocks.
 const TAU = Math.PI * 2;
 const SKY_SPEED = TAU / 72;
+const COMET_PERIOD = 9;
+const COMET_TURNS = 2.15;
+const COMET_TAIL = .30; // Fraction of the trip up the tree retained in the trail.
+const COMET_SAMPLES = 256;
+const COMET_COLORS = [[1,.65,.23],[.43,.94,.81],[1,.43,.52]];
+const PHOTO_SPEED = TAU / 24;
+const HEART_SPEED = TAU / 28;
 const MODES = {tree: 0, photo: 1, heart: 2};
 const STRIDE = 13;
 const PALETTE = [
@@ -114,7 +116,9 @@ function layout(width, height) {
         heartWidth: Math.min(width * .408, height * .715),
         heartHeight: Math.min(height * .438, width * .48),
         centerY: height * .509,
-        photoWidth: Math.min(width * .43, height * .65), photoHeight: height * .45,
+        // Even landscape photos leave visible arcs down both sides of the frame.
+        photoWidth: Math.min(width * .57, Math.max(width * .455, height * .73)),
+        photoHeight: Math.min(height * .47, Math.max(height * .40, width * .55)),
         dotScale: Math.max(.72, Math.min(1.7, Math.min(height / 585, width / 620)))
     };
 }
@@ -148,13 +152,13 @@ function makeField(count) {
         const radius = (.70 + random() * .31) * t;
         const tree = [radius * Math.cos(theta), 1 - t, radius * Math.sin(theta)];
         const angle = random() * TAU;
-        const ring = random() < .8 ? .76 + jitter() * .28 : Math.sqrt(random()) * 1.12;
+        const ring = random() < .8 ? .86 + jitter() * .27 : Math.sqrt(random()) * 1.16;
         const photo = [Math.cos(angle) * ring, Math.sin(angle) * ring, random()];
         const a = random() * TAU;
-        const hx = Math.sin(a) ** 3;
-        const hy = -(13 * Math.cos(a) - 5 * Math.cos(2*a) - 2 * Math.cos(3*a) - Math.cos(4*a)) / 17;
         const band = random() < .79 ? 1 + jitter() * .10 : .24 + random() * .86;
-        const heart = [hx * band + jitter() * .046, hy * band + jitter() * .075, random()];
+        // Store phase, scale and a small vertical offset. Each speck follows its
+        // own closed heart path while the photographs stay in their grid.
+        const heart = [a, band + jitter() * .025, jitter() * .063];
         const n = random(), k = random();
         const kind = n < .077 ? 1 : n < .148 ? 2 : n < .193 ? 3 : 0;
         const diameter = kind === 1 ? 3.7 + 8.5 * random() ** 2 :
@@ -178,6 +182,24 @@ function makeField(count) {
         }
     }
     data.push(0, 1.052, 0, 0, 0, 0, 0, 0, 0, 43, 5, 2, .1);
+    // Lay down the dim tail first and the hot leading point last.
+    for (let strand=0; strand<3; strand++) {
+        for (let sample=COMET_SAMPLES-1; sample>=0; sample--) {
+            const age=sample/(COMET_SAMPLES-1);
+            data.push(strand,age,0, 0,0,0, 0,0,0, 0,8,strand,0);
+        }
+    }
+    const giftRows = [[.26,1],[.41,2],[.56,2],[.69,3],[.83,3],[.95,4]];
+    for(const [depth, amount] of giftRows) {
+        for(let i=0;i<amount;i++) {
+            const angle = depth*10 + i*TAU/amount;
+            const radius = depth*.89;
+            const height = 1-depth + .025*Math.sin(i*2.4+angle);
+            const wrap = (i+Math.round(10*depth)) % 3;
+            data.push(Math.cos(angle)*radius,height,Math.sin(angle)*radius, 0,0,0, 0,0,0,
+                26+10*depth,7,wrap,random());
+        }
+    }
     return new Float32Array(data);
 }
 
@@ -188,6 +210,7 @@ attribute vec3 aHeart;
 attribute vec4 aSprite;
 uniform vec2 uViewport;
 uniform vec2 uSkyRotation;
+uniform vec3 uOrbit;
 uniform vec3 uTree;
 uniform vec4 uOther;
 uniform vec3 uWeight;
@@ -208,14 +231,39 @@ vec3 palette(float i) {
 }
 void main() {
     float time = uFrame.x, phase = aSprite.w * 6.283185;
+    if(aSprite.y==8.) {
+        float strand=aTree.x, age=aTree.y;
+        float h=fract(time/${COMET_PERIOD.toFixed(1)}+.21+strand/3.-age*${COMET_TAIL});
+        float angle=6.283185*(h*${COMET_TURNS}+strand/3.)+.115*time;
+        float radius=.045+1.075*(1.-h), depth=sin(angle)*radius;
+        vec2 p=vec2(uViewport.x*.5+cos(angle)*radius*uTree.x,
+                    uTree.z-h*uTree.y+depth*uTree.y*.065);
+        float head=exp(-age*60.), fade=(1.-age)*(1.-age);
+        vKind=8.;
+        vColor=strand<.5 ? vec3(${COMET_COLORS[0].map(n=>n.toFixed(2)).join(',')}) :
+               strand<1.5 ? vec3(${COMET_COLORS[1].map(n=>n.toFixed(2)).join(',')}) : vec3(${COMET_COLORS[2].map(n=>n.toFixed(2)).join(',')});
+        vPhase=head;
+        vAlpha=uWeight.x*(.34+.66*(.5+.5*sin(angle)))*(.46+.54*smoothstep(0.,.025,min(h,1.-h)))*fade;
+        gl_Position=vec4(p/uViewport*vec2(2.,-2.)+vec2(-1.,1.),0.,1.);
+        gl_PointSize=clamp((4.+8.*(1.-age)+13.*head)*uFrame.z*uFrame.y,1.,uFrame.w);
+        return;
+    }
     float spin = time * .115;
     float z = aTree.x * sin(spin) + aTree.z * cos(spin);
     float x = aTree.x * cos(spin) - aTree.z * sin(spin);
     vec2 tree = vec2(uViewport.x*.5+x*uTree.x, uTree.z-aTree.y*uTree.y+z*uTree.y*.024);
-    vec2 breathe = vec2(cos(time*.33+phase),sin(time*.43+phase));
-    vec2 photo = vec2(uViewport.x*.5,uCenterY) + aPhoto.xy * uOther.xy + breathe * (1.+4.*aPhoto.z);
-    vec2 heart = vec2(uViewport.x*.5,uCenterY-.055*uViewport.y) + aHeart.xy * uOther.zw + breathe * (1.+2.*aHeart.z);
-    vec2 p = tree*uWeight.x + photo*uWeight.y + heart*uWeight.z;
+    vec2 p = tree*uWeight.x;
+    if(uWeight.y>0.) {
+        vec2 orbit=vec2(aPhoto.x*uOrbit.x-aPhoto.y*uOrbit.y,aPhoto.x*uOrbit.y+aPhoto.y*uOrbit.x);
+        p += (vec2(uViewport.x*.5,uCenterY) + orbit*uOther.xy)*uWeight.y;
+    }
+    if(uWeight.z>0.) {
+        float a=aHeart.x+uOrbit.z, s=sin(a), c=cos(a);
+        // cos(2a), cos(3a), cos(4a) expanded to avoid extra trigonometry.
+        float hy=-((((-8.*c-8.)*c-2.)*c+19.)*c+4.)/17.;
+        vec2 path=vec2(s*s*s,hy)*aHeart.y+vec2(0.,aHeart.z);
+        p += (vec2(uViewport.x*.5,uCenterY-.055*uViewport.y) + path*uOther.zw)*uWeight.z;
+    }
     vKind = aSprite.y;
     vColor = palette(aSprite.z);
     vPhase = phase;
@@ -237,6 +285,12 @@ void main() {
         vAlpha = uWeight.x;
         size *= .25+.75*uWeight.x;
     }
+    if(vKind == 7.) {
+        p = tree;
+        vPhase = aSprite.z;
+        vAlpha = uWeight.x * (.88+.12*z);
+        size = max(23.,aSprite.x*uFrame.z) * (1.+.12*z);
+    }
     gl_Position = vec4(p/uViewport*vec2(2.,-2.)+vec2(-1.,1.),0.,1.);
     gl_PointSize = clamp(size*uFrame.y, 1., uFrame.w);
 }`;
@@ -247,6 +301,7 @@ varying lowp vec3 vColor;
 varying mediump float vKind;
 varying mediump float vAlpha;
 varying mediump float vPhase;
+uniform sampler2D uGifts;
 float star(vec2 p, float rotation){
     float a = abs(mod(atan(p.x,-p.y)+rotation+.62832,1.25664)-.62832);
     float edge = .2351 / (.4*sin(.62832-a) + sin(a));
@@ -257,7 +312,16 @@ void main() {
     float r = length(p);
     float light;
     vec3 color = vColor;
-    if (vKind < .5) {
+    if(vKind==8.) {
+        float core=exp(-r*r*28.), halo=exp(-r*r*5.);
+        color=mix(color,vec3(1.,.99,.92),core*(.38+.58*vPhase));
+        light=.34*halo+core;
+    } else if(vKind==7.) {
+        // Each atlas cell has a transparent margin for bilinear filtering.
+        vec4 gift=texture2D(uGifts,vec2((gl_PointCoord.x+vPhase)/3.,gl_PointCoord.y));
+        gl_FragColor=vec4(gift.rgb,gift.a*vAlpha);
+        return;
+    } else if (vKind < .5) {
         light = (1.-smoothstep(.10,.91,r))*.86;
     } else if(vKind < 1.5) {
         // A small faceted ornament with an edge light and a hot glint.
@@ -289,6 +353,63 @@ function compile(gl, type, source) {
     return shader;
 }
 
+const GIFT_CELL=96;
+function makeGiftAtlas() {
+    const atlas=document.createElement('canvas');
+    atlas.width=3*GIFT_CELL; atlas.height=GIFT_CELL;
+    const ctx=atlas.getContext('2d');
+    const papers=[
+        ['#e7584e','#8e2331','#5b1c2c','#d64744'],
+        ['#3c9980','#195c51','#123c37','#418e77'],
+        ['#efbb67','#bd7939','#7a472a','#d8a05c']
+    ];
+    function face(vertices,fill) {
+        ctx.beginPath(); ctx.moveTo(...vertices[0]);
+        for(let i=1;i<vertices.length;i++) ctx.lineTo(...vertices[i]);
+        ctx.closePath(); ctx.fillStyle=fill; ctx.fill();
+    }
+    papers.forEach(([bright,front,side,lid],index)=>{
+        ctx.save();
+        ctx.translate(index*GIFT_CELL,0); ctx.scale(GIFT_CELL/64,GIFT_CELL/64);
+        const paper=ctx.createLinearGradient(9,20,32,56);
+        paper.addColorStop(0,bright); paper.addColorStop(1,front);
+        const silk=ctx.createLinearGradient(15,20,42,51);
+        if(index===2) {
+            silk.addColorStop(0,'#f9a89a'); silk.addColorStop(.45,'#c95859');
+            silk.addColorStop(1,'#9b303d');
+        } else {
+            silk.addColorStop(0,'#fff1bd'); silk.addColorStop(.48,'#eeb764');
+            silk.addColorStop(1,'#c18a3d');
+        }
+        // Two faces, overhanging lid and ribbon that wraps over the top.
+        face([[9,26],[36,35],[36,58],[9,49]],paper);
+        face([[36,35],[56,25],[55,49],[36,58]],side);
+        face([[20,30],[26,32],[26,55],[20,53]],silk);
+        face([[43,32],[48,29],[47,53],[43,55]],silk);
+        face([[6,23],[28,14],[59,21],[36,33]],bright);
+        face([[6,23],[36,33],[36,38],[6,28]],lid);
+        face([[36,33],[59,21],[59,26],[36,38]],front);
+        face([[17,27],[39,17],[46,18],[24,29]],silk);
+        face([[17,27],[24,29],[24,34],[17,32]],silk);
+        face([[16,19],[21,17],[52,24],[46,27]],silk);
+        face([[46,27],[52,24],[52,29],[46,32]],silk);
+        // The two open silk loops stay legible at a phone's small sprite size.
+        ctx.lineJoin='round'; ctx.lineCap='round';
+        ctx.strokeStyle=index===2?'#b9404b':'#ffd58b'; ctx.lineWidth=3.2;
+        ctx.beginPath(); ctx.moveTo(31,20);
+        ctx.bezierCurveTo(13,18,15,4,22,7); ctx.bezierCurveTo(28,9,29,16,31,20);
+        ctx.bezierCurveTo(37,5,49,5,46,11); ctx.bezierCurveTo(44,16,37,19,31,20);
+        ctx.stroke();
+        ctx.strokeStyle=index===2?'#ffc2af':'#fff0bd'; ctx.lineWidth=1.05;
+        ctx.beginPath(); ctx.moveTo(19,8); ctx.bezierCurveTo(24,5,29,16,31,19);
+        ctx.moveTo(33,17); ctx.quadraticCurveTo(40,6,45,8); ctx.stroke();
+        ctx.fillStyle=index===2?'#ea8d8a':'#ffe2a5';
+        ctx.beginPath(); ctx.ellipse(31.6,19.5,3.7,2.6,-.24,0,TAU); ctx.fill();
+        ctx.restore();
+    });
+    return atlas;
+}
+
 function gpuRenderer(gl, field) {
     const program = gl.createProgram();
     const shaders = [compile(gl, gl.VERTEX_SHADER, VERTEX), compile(gl, gl.FRAGMENT_SHADER, FRAGMENT)];
@@ -305,11 +426,21 @@ function gpuRenderer(gl, field) {
         gl.enableVertexAttribArray(location);
         gl.vertexAttribPointer(location, size, gl.FLOAT, false, STRIDE*4, offset*4);
     }
-    const uniform = Object.fromEntries(['Viewport','SkyRotation','Tree','Other','Weight','Frame','CenterY']
+    const uniform = Object.fromEntries(['Viewport','SkyRotation','Orbit','Tree','Other','Weight','Frame','CenterY','Gifts']
         .map(key => [key, gl.getUniformLocation(program, 'u'+key)]));
+    const gifts=gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D,gifts);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,makeGiftAtlas());
+    gl.uniform1i(uniform.Gifts,0);
+    const total=field.length/STRIDE;
+    let giftStart=total;
+    while(giftStart>0 && field[(giftStart-1)*STRIDE+10]===7) giftStart--;
     const maxSize = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1];
     gl.enable(gl.BLEND);
-    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.clearColor(0,0,0,0);
     return {
         draw(w, h, ratio, l, weights, time, skyCos, skySin) {
@@ -317,21 +448,39 @@ function gpuRenderer(gl, field) {
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.uniform2f(uniform.Viewport, w, h);
             gl.uniform2f(uniform.SkyRotation, skyCos, skySin);
+            gl.uniform3f(uniform.Orbit,Math.cos(time*PHOTO_SPEED),Math.sin(time*PHOTO_SPEED),(time*HEART_SPEED)%TAU);
             gl.uniform3f(uniform.Tree, l.treeWidth, l.treeHeight, l.treeBase);
             gl.uniform4f(uniform.Other, l.photoWidth, l.photoHeight, l.heartWidth, l.heartHeight);
             gl.uniform1f(uniform.CenterY, l.centerY);
             gl.uniform3fv(uniform.Weight, weights);
             gl.uniform4f(uniform.Frame, time, ratio, l.dotScale, maxSize);
-            gl.drawArrays(gl.POINTS, 0, field.length/STRIDE);
+            gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+            gl.drawArrays(gl.POINTS,0,giftStart);
+            if(weights[0]>0 && giftStart<total) {
+                // Opaque wrapping paper sits in front of the background fairy lights.
+                gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+                gl.drawArrays(gl.POINTS,giftStart,total-giftStart);
+            }
         },
-        dispose() { gl.deleteBuffer(buffer); gl.deleteProgram(program); }
+        dispose() { gl.deleteTexture(gifts); gl.deleteBuffer(buffer); gl.deleteProgram(program); }
     };
 }
 
 function canvasRenderer(canvas, field) {
     const ctx = canvas.getContext('2d');
+    const gifts = makeGiftAtlas();
     const atlas = document.createElement('canvas');
     const cell = 64;
+    const cometAtlas = document.createElement('canvas');
+    cometAtlas.width = cell*3; cometAtlas.height = cell;
+    const ink=cometAtlas.getContext('2d');
+    COMET_COLORS.forEach((color,i)=>{
+        const x=(i+.5)*cell, y=cell/2, rgb=color.map(v=>Math.round(v*255)).join(',');
+        const glow=ink.createRadialGradient(x,y,0,x,y,y);
+        glow.addColorStop(0,'#fffae8'); glow.addColorStop(.16,'rgba('+rgb+',.95)');
+        glow.addColorStop(.46,'rgba('+rgb+',.18)'); glow.addColorStop(1,'rgba('+rgb+',0)');
+        ink.fillStyle=glow; ink.fillRect(i*cell,0,cell,cell);
+    });
     atlas.width = PALETTE.length*cell; atlas.height = 7*cell;
     const brush = atlas.getContext('2d');
     for (let kind = 0; kind < 7; kind++) {
@@ -364,20 +513,55 @@ function canvasRenderer(canvas, field) {
             ctx.setTransform(ratio,0,0,ratio,0,0);
             ctx.clearRect(0,0,w,h);
             const co=Math.cos(time*.115), si=Math.sin(time*.115);
+            const photoCos=Math.cos(time*PHOTO_SPEED), photoSin=Math.sin(time*PHOTO_SPEED);
+            const heartPhase=(time*HEART_SPEED)%TAU;
             for (let i=0;i<field.length;i+=STRIDE) {
                 const kind=field[i+10], seed=field[i+12];
                 let x, y, alpha, size=field[i+9]*l.dotScale;
-                if (kind===4 || kind===6) {
+                if (kind===8) {
+                    if (weights[0]<=0) continue;
+                    const strand=field[i], age=field[i+1];
+                    const cycle=time/COMET_PERIOD+.21+strand/3-age*COMET_TAIL;
+                    const h=cycle-Math.floor(cycle);
+                    const angle=TAU*(h*COMET_TURNS+strand/3)+.115*time;
+                    const radius=.045+1.075*(1-h), sin=Math.sin(angle);
+                    x=w/2+Math.cos(angle)*radius*l.treeWidth;
+                    y=l.treeBase-h*l.treeHeight+sin*radius*l.treeHeight*.065;
+                    const edge=Math.min(1,Math.min(h,1-h)/.025);
+                    ctx.globalAlpha=weights[0]*(.34+.66*(.5+.5*sin))*(.46+.54*edge*edge*(3-2*edge))*(1-age)**2;
+                    size=(4+8*(1-age)+13*Math.exp(-age*60))*l.dotScale;
+                    ctx.drawImage(cometAtlas,strand*cell,0,cell,cell,x-size/2,y-size/2,size,size);
+                    continue;
+                } else if (kind===4 || kind===6) {
                     x=w/2+field[i]*skyCos-field[i+1]*skySin;
                     y=h/2+field[i]*skySin+field[i+1]*skyCos;
                     alpha=kind===4?.13:.67;
                 } else {
                     const treeX=w/2+(field[i]*co-field[i+2]*si)*l.treeWidth;
                     const treeY=l.treeBase-field[i+1]*l.treeHeight+(field[i]*si+field[i+2]*co)*.024*l.treeHeight;
-                    if (kind===5) { x=treeX; y=treeY; alpha=weights[0]; }
+                    if (kind===7) {
+                        if(weights[0]<=0) continue;
+                        const z=field[i]*si+field[i+2]*co;
+                        size=Math.max(23,size)*(1+.12*z);
+                        ctx.globalAlpha=weights[0]*(.88+.12*z);
+                        ctx.drawImage(gifts,field[i+11]*GIFT_CELL,0,GIFT_CELL,GIFT_CELL,
+                            treeX-size/2,treeY-size/2,size,size);
+                        continue;
+                    } else if (kind===5) { x=treeX; y=treeY; alpha=weights[0]; }
                     else {
-                        x=treeX*weights[0]+(w/2+field[i+3]*l.photoWidth)*weights[1]+(w/2+field[i+6]*l.heartWidth)*weights[2];
-                        y=treeY*weights[0]+(l.centerY+field[i+4]*l.photoHeight)*weights[1]+(l.centerY-h*.055+field[i+7]*l.heartHeight)*weights[2];
+                        x=treeX*weights[0]; y=treeY*weights[0];
+                        if(weights[1]>0) {
+                            const px=field[i+3]*photoCos-field[i+4]*photoSin;
+                            const py=field[i+3]*photoSin+field[i+4]*photoCos;
+                            x+=(w/2+px*l.photoWidth)*weights[1];
+                            y+=(l.centerY+py*l.photoHeight)*weights[1];
+                        }
+                        if(weights[2]>0) {
+                            const a=field[i+6]+heartPhase, s=Math.sin(a), c=Math.cos(a), band=field[i+7];
+                            const hy=-((((-8*c-8)*c-2)*c+19)*c+4)/17;
+                            x+=(w/2+s*s*s*band*l.heartWidth)*weights[2];
+                            y+=(l.centerY-h*.055+(hy*band+field[i+8])*l.heartHeight)*weights[2];
+                        }
                         alpha=.56+.35*Math.sin(time*1.5+seed*32);
                     }
                 }
@@ -386,7 +570,7 @@ function canvasRenderer(canvas, field) {
                 ctx.drawImage(atlas,field[i+11]*cell,kind*cell,cell,cell,x-size/2,y-size/2,size,size);
             }
         },
-        dispose() { atlas.width=0; }
+        dispose() { atlas.width=0; gifts.width=0; cometAtlas.width=0; }
     };
 }
 
@@ -494,43 +678,6 @@ const photos = Array.from({length:12}, (_, index) =>
   new URL(`./assets/yyj/${index + 1}.jpg`, document.baseURI).href);
 let session = null, cameraOn = false, pose = 0, toastTimer;
 let remainingPhotos = [], lastPhoto = null;
-let photoYaw = 0, palmAnchor = null, drag = null;
-
-function setPhotoYaw(degrees) {
-  photoYaw = degrees;
-  stage.style.setProperty('--photo-yaw', degrees.toFixed(2) + 'deg');
-  // Keep the picture readable when the back of the frame turns towards the viewer.
-  stage.style.setProperty('--photo-face', Math.cos(degrees * Math.PI / 180) < 0 ? '-1' : '1');
-}
-
-function endDrag() {
-  if (drag && stage.hasPointerCapture(drag.id)) stage.releasePointerCapture(drag.id);
-  drag = null;
-  palmAnchor = null;
-}
-
-function followPalm(points) {
-  if (drag || pose === 0 || points?.length !== 21) { palmAnchor = null; return; }
-  // Use the wrist and knuckles so changing finger shape barely shifts the pivot.
-  const x = 1 - (points[0].x + points[5].x + points[9].x + points[13].x + points[17].x) / 5;
-  if (!Number.isFinite(x)) { palmAnchor = null; return; }
-  if (!palmAnchor) palmAnchor = {x, yaw: photoYaw};
-  const degrees = palmAnchor.yaw + (x - palmAnchor.x) * 480;
-  if (Math.abs(degrees - photoYaw) >= 1) setPhotoYaw(degrees);
-}
-
-stage.addEventListener('pointerdown', event => {
-  if (pose === 0 || !event.isPrimary || event.button !== 0 || event.target.closest('button,a,input,.preview,.bottom')) return;
-  drag = { id:event.pointerId, x:event.clientX, yaw:photoYaw };
-  stage.setPointerCapture(event.pointerId);
-});
-stage.addEventListener('pointermove', event => {
-  if (drag?.id !== event.pointerId) return;
-  setPhotoYaw(drag.yaw + (event.clientX - drag.x) * 480 / stage.clientWidth);
-});
-for (const type of ['pointerup','pointercancel','lostpointercapture']) {
-  stage.addEventListener(type, event => { if (drag?.id === event.pointerId) endDrag(); });
-}
 
 function drawPhoto() {
   if (remainingPhotos.length === 0) remainingPhotos = [1, 2, 3, 4];
@@ -575,10 +722,6 @@ function buildWall() {
 }
 
 function showPose(count, waiting = false) {
-  if (count !== pose || count > 0 && count < 5) {
-    endDrag();
-    setPhotoYaw(0);
-  }
   pose = count;
   const mode = count === 0 ? 'tree' : count === 5 ? 'heart' : 'photo';
   stage.dataset.mode = mode;
@@ -666,11 +809,7 @@ async function toggleCamera() {
           hint(status==='denied'?'请在浏览器中允许摄像头，或点下方按钮操作。':status==='no-device'?'未检测到摄像头，可以用按钮或键盘切换。':'手势识别暂不可用，点击右上角可重试。');
         }
       },
-      points => {
-        if (session !== current) return;
-        followPalm(points);
-        drawSkeleton(points);
-      }, current.controller.signal);
+      points => { if (session === current) drawSkeleton(points); }, current.controller.signal);
     if(session!==current) current.stop?.();
   } catch {if(session===current){stopCamera();hint('摄像头暂时无法开启，可以用按钮操作。');}}
 }
