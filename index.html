@@ -23,7 +23,7 @@ button{touch-action:manipulation}
 .brand{max-width:35vw;text-shadow:0 2px 18px #2d120d}
 h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;font-weight:750;letter-spacing:-.035em;overflow-wrap:anywhere}
 .english{display:block;margin:5px 0 0;font:600 clamp(8px,.78vw,14px)/1.2 Georgia,serif;letter-spacing:.33em;color:#e6bd85}
-.pill,.tools,.preview,.photo-count{background:var(--glass);border:1px solid var(--edge);box-shadow:inset 0 1px #ffffff0b;color:var(--gold)}
+.pill,.tools,.preview{background:var(--glass);border:1px solid var(--edge);box-shadow:inset 0 1px #ffffff0b;color:var(--gold)}
 .mode-label{position:absolute;left:50%;transform:translateX(-50%);padding:7px 19px;border-radius:24px;font-size:clamp(12px,1.15vw,22px);white-space:nowrap}
 .camera-toggle{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:7px 16px;border-radius:24px;font-size:clamp(12px,1vw,17px)}
 .dot{width:7px;height:7px;border-radius:50%;background:#be966a}
@@ -31,10 +31,9 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
 #spotlight{display:grid;place-content:center;justify-items:center;pointer-events:none;padding:14vh 20px 11vh;z-index:1}
 .focus-frame{position:relative;display:grid;border:1px solid #fed38c;padding:5px;background:#4a3020;border-radius:12px;box-shadow:0 0 0 2px #7b5837,0 0 28px #ffc2643d,0 20px 60px #05010377;overflow:hidden;pointer-events:auto}
 .focus-frame img{display:block;width:auto;height:auto;max-width:min(61vw,850px);max-height:65vh;min-width:60px;min-height:60px;object-fit:contain;border-radius:7px}
-.photo-count{margin-top:13px;padding:5px 14px;border-radius:30px;font-size:12px}
 #wall{inset:clamp(75px,12vh,145px) clamp(112px,14vw,250px) clamp(65px,10vh,115px);width:auto;height:auto;z-index:1;pointer-events:none}
-.galaxy-card{position:absolute;left:0;top:0;width:var(--card-size);aspect-ratio:.83;overflow:hidden;padding:2px;background:linear-gradient(150deg,#ffdda6,#997345 52%,#f8ce90);border-radius:7%;box-shadow:0 0 12px #fec77b3d,0 6px 22px #16091099;will-change:transform}
-.galaxy-card img{display:block;width:100%;height:100%;object-fit:cover;border-radius:5%}
+.galaxy-card{position:absolute;left:0;top:0;width:calc(var(--card-size) * var(--width-factor));display:grid;overflow:hidden;padding:2px;border:1px solid #ebc385;background:#4a3020;border-radius:5px;box-shadow:0 0 12px #fec77b3d,0 6px 22px #16091099;will-change:transform}
+.galaxy-card img{display:block;width:100%;height:100%;min-height:0;object-fit:contain;border-radius:2px}
 #stage[data-mode="all"] .preview{width:clamp(94px,10vw,160px)}
 [hidden]{display:none!important}
 .preview{position:absolute;right:clamp(12px,2vw,36px);bottom:clamp(61px,8vh,100px);width:clamp(126px,16.5vw,290px);padding:8px;border-radius:13px;z-index:2}
@@ -53,7 +52,7 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
 .tools .shortcut{font:11px Georgia,serif;opacity:.78;margin-left:4px}
 .toast{position:absolute;left:50%;bottom:72px;transform:translateX(-50%);max-width:min(85vw,580px);padding:8px 15px;border:1px solid var(--edge);border-radius:15px;color:#fff0d7;background:#24161bed;text-align:center;font-size:13px;z-index:6}
 @media(max-width:820px){.tools .shortcut{display:none}.mast{inset:22px 20px auto}.mode-label{top:50px;font-size:12px}.preview{width:116px;right:12px;bottom:65px}.focus-frame img{max-width:77vw;max-height:56vh}}
-@media(max-width:520px){.brand{max-width:59vw}.camera-toggle{padding:7px 11px;min-height:35px;font-size:11px}.english{letter-spacing:.22em}.mode-label{top:53px;padding:5px 12px}.bottom{inset-inline:6px;gap:4px}.tools{gap:0;padding:3px}.tools button{font-size:11px;padding:10px 8px}.preview{width:94px;padding:5px;bottom:66px}.preview-title{font-size:7px}.feed button{font-size:10px;padding:4px 6px}.photo-count{font-size:11px}}
+@media(max-width:520px){.brand{max-width:59vw}.camera-toggle{padding:7px 11px;min-height:35px;font-size:11px}.english{letter-spacing:.22em}.mode-label{top:53px;padding:5px 12px}.bottom{inset-inline:6px;gap:4px}.tools{gap:0;padding:3px}.tools button{font-size:11px;padding:10px 8px}.preview{width:94px;padding:5px;bottom:66px}.preview-title{font-size:7px}.feed button{font-size:10px;padding:4px 6px}}
 @media(max-height:500px) and (min-width:521px){.mast{inset:10px 15px auto}.mode-label{top:0}.preview{width:102px}.bottom{bottom:5px}.tools button{padding:5px 9px}.focus-frame img{max-height:60vh}}
 @media(max-width:820px) and (min-height:501px){#wall{inset:104px 5vw 150px}}
 @media(max-height:500px){#wall{inset:58px clamp(40px,14vw,130px) 40px}}
@@ -68,8 +67,8 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
     <div id="mode-label" class="mode-label pill" role="status">星光聚成树</div>
     <button id="camera-toggle" class="camera-toggle pill" aria-pressed="false"><span class="dot"></span><span id="camera-state">开启手势</span></button>
   </header>
-  <div id="spotlight" hidden><div class="focus-frame"><img id="focus-photo" alt="正在展示的照片"></div><div id="photo-count" class="photo-count"></div></div>
-  <div id="wall" role="group" aria-label="星球相册，全部十二张照片" hidden></div>
+  <div id="spotlight" hidden><div class="focus-frame"><img id="focus-photo" alt="随机抽取的相册照片"></div></div>
+  <div id="wall" role="group" aria-label="银河相册，展示所有照片" hidden></div>
   <aside class="preview" aria-label="手势摄像头预览"><span class="preview-title" lang="en">GESTURE CAM</span><div class="feed"><video id="video" muted playsinline autoplay></video><canvas id="skeleton" hidden></canvas><button id="camera-start">开启镜头</button></div></aside>
   <nav class="bottom" aria-label="场景操作">
     <div class="tools">
@@ -84,8 +83,7 @@ h1{font-size:clamp(21px,2.65vw,54px);line-height:1.14;color:#ffe5b5;margin:0;fon
 </main>
 <script type="module">
 const mountScene = (() => {
-// All particle poses share one vertex buffer, so a gesture only changes three
-// interpolation weights. The hand tracker and the scene have independent clocks.
+// The same stars move between poses. The hand tracker and the scene have independent clocks.
 const TAU = Math.PI * 2;
 const SKY_SPEED = TAU / 72;
 const COMET_PERIOD = 9;
@@ -95,7 +93,8 @@ const COMET_SAMPLES = 256;
 const COMET_COLORS = [[1,.65,.23],[.43,.94,.81],[1,.43,.52]];
 const PHOTO_SPEED = TAU / 24;
 const GALAXY_SPEED = TAU / 54;
-const MODES = {tree: 0, photo: 1, galaxy: 2};
+const DISK_SPEED = TAU / 65;
+const MODES = {tree: 0, photo: 1, galaxy: 2, spiral: 3};
 const STRIDE = 13;
 const PALETTE = [
     [1, .87, .60], [.98, .72, .34], [1, .95, .82], [.88, .49, .20],
@@ -107,7 +106,11 @@ const TREE_SKY='radial-gradient(ellipse 54% 68% at 50% 62%, rgba(128,64,30,.90) 
 function layout(width, height) {
     // Scale the drawing with the available stage, including when a phone turns sideways.
     const treeHeight = Math.min(height * .63, width * 1.02);
+    const tilt = width < height*.9 ? -1.16 : -.27;
+    const c = Math.cos(tilt), s = Math.sin(tilt), flatten = .61;
+    const radiusX = Math.min(width*.446 / Math.hypot(c,flatten*s), height*.365 / Math.hypot(s,flatten*c));
     return {
+        disk:{tilt, radiusX, radiusY:radiusX*flatten, angle:0},
         treeWidth: treeHeight * .423, treeHeight, treeBase: height * .55 + treeHeight * .54,
         sphereRadius: Math.min(width*.425,height*.365),
         centerY: height * .509,
@@ -189,11 +192,37 @@ function makeField(count) {
     return new Float32Array(data);
 }
 
+// Store disk coordinates once. Rotating this plane keeps the pictures and their spiral arms together.
+function makeSpiral(field) {
+    const disk = new Float32Array(field.length / STRIDE * 3);
+    let state=0x9ed31;
+    const random=() => {
+        state=(Math.imul(state,1664525)+1013904223)>>>0;
+        return state/4294967296;
+    };
+    for (let i=0,j=0; i<field.length; i+=STRIDE,j+=3) {
+        const kind=field[i+10], population=random(), u=random();
+        const isCore=population<.15 && kind<4, isHalo=population>.73;
+        const radius=isCore ? .21*u**.72 : isHalo ? 1.12*Math.sqrt(u) : .055+.94*u**.72;
+        const arm = (j/3)%3;
+        const scatter=(random()+random()+random()-1.5)*(.28+.46*radius);
+        const azimuth=isCore || isHalo ? TAU*random() : arm*TAU/3+2.9*radius+scatter;
+        disk[j]=radius*Math.cos(azimuth); disk[j+1]=radius*Math.sin(azimuth); disk[j+2]=radius;
+    }
+    return disk;
+}
+function diskMatrix(disk) {
+    const c=Math.cos(disk.angle), s=Math.sin(disk.angle);
+    const x=disk.radiusX, y=disk.radiusY, ct=Math.cos(disk.tilt), st=Math.sin(disk.tilt);
+    return [ct*x*c-st*y*s, st*x*c+ct*y*s, -ct*x*s-st*y*c, -st*x*s+ct*y*c];
+}
+
 const VERTEX = `
 attribute vec3 aTree;
 attribute vec3 aPhoto;
 attribute vec3 aGalaxy;
 attribute vec4 aSprite;
+attribute vec3 aDisk;
 uniform vec2 uViewport;
 uniform vec2 uSkyRotation;
 uniform vec4 uOrbit;
@@ -202,7 +231,8 @@ uniform vec3 uHand;
 uniform vec2 uScatter;
 uniform vec3 uTree;
 uniform vec4 uOther;
-uniform vec3 uWeight;
+uniform vec4 uWeight;
+uniform mat2 uDisk;
 uniform vec4 uFrame;
 uniform float uCenterY;
 varying lowp vec3 vColor;
@@ -246,7 +276,7 @@ void main() {
     // back along its own arc, including when the reversal happens mid-flight.
     float delay=floor(aSprite.w*4.)*.065;
     float spread=smoothstep(delay,.805+delay,uWeight.z);
-    float photoShare=clamp(uWeight.y/max(.00001,1.-uWeight.z),0.,1.);
+    float photoShare=clamp(uWeight.y/max(.00001,1.-uWeight.z-uWeight.w),0.,1.);
     bool ornament=aSprite.y==5. || aSprite.y==7.;
     vec2 origin=tree;
     if(uWeight.y>0.) {
@@ -301,6 +331,17 @@ void main() {
         vPhase = aSprite.z;
         vAlpha = (spread+(1.-spread)*(1.-photoShare))*(.88+.12*z)*ornamentLight;
         size = max(23.,aSprite.x*uFrame.z)*(1.+.12*z)*mix(1.,.62,spread)*ornamentSize;
+    }
+    if(uWeight.w>0. && (aSprite.y<4. || ornament)) {
+        float blend=smoothstep(0.,1.,uWeight.w);
+        vec2 disk=vec2(uViewport.x*.5,uCenterY)+uDisk*aDisk.xy;
+        p=mix(p,disk,blend);
+        float core=1.-smoothstep(.025,.20,aDisk.z);
+        vAlpha=mix(vAlpha, (.68+.30*core)*brightness, blend);
+        if(!ornament) {
+            vColor=mix(vColor,mix(palette(aSprite.z),vec3(1.,.88,.66),.44+.50*core),blend);
+            size=mix(size,aSprite.x*uFrame.z*(.82+.27*core),blend);
+        } else size=mix(size,aSprite.x*uFrame.z*.58,blend);
     }
     gl_Position = vec4(p/uViewport*vec2(2.,-2.)+vec2(-1.,1.),0.,1.);
     gl_PointSize = clamp(size*uFrame.y, 1., uFrame.w);
@@ -437,7 +478,13 @@ function gpuRenderer(gl, field) {
         gl.enableVertexAttribArray(location);
         gl.vertexAttribPointer(location, size, gl.FLOAT, false, STRIDE*4, offset*4);
     }
-    const uniform = Object.fromEntries(['Viewport','SkyRotation','Orbit','Pitch','Hand','Scatter','Tree','Other','Weight','Frame','CenterY','Gifts']
+    const diskBuffer=gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER,diskBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER,makeSpiral(field),gl.STATIC_DRAW);
+    const diskLocation=gl.getAttribLocation(program,'aDisk');
+    gl.enableVertexAttribArray(diskLocation);
+    gl.vertexAttribPointer(diskLocation,3,gl.FLOAT,false,0,0);
+    const uniform = Object.fromEntries(['Viewport','SkyRotation','Orbit','Pitch','Hand','Scatter','Tree','Other','Weight','Disk','Frame','CenterY','Gifts']
         .map(key => [key, gl.getUniformLocation(program, 'u'+key)]));
     const gifts=gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D,gifts);
@@ -468,7 +515,8 @@ function gpuRenderer(gl, field) {
             gl.uniform3f(uniform.Tree, l.treeWidth, l.treeHeight, l.treeBase);
             gl.uniform4f(uniform.Other, l.photoWidth, l.photoHeight, l.sphereRadius, l.sphereRadius);
             gl.uniform1f(uniform.CenterY, l.centerY);
-            gl.uniform3fv(uniform.Weight, weights);
+            gl.uniform4fv(uniform.Weight, weights);
+            if(weights[3]>0) gl.uniformMatrix2fv(uniform.Disk,false,diskMatrix(l.disk));
             gl.uniform4f(uniform.Frame, time, ratio, l.dotScale, maxSize);
             gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
             gl.drawArrays(gl.POINTS,0,giftStart);
@@ -478,12 +526,13 @@ function gpuRenderer(gl, field) {
                 gl.drawArrays(gl.POINTS,giftStart,total-giftStart);
             }
         },
-        dispose() { gl.deleteTexture(gifts); gl.deleteBuffer(buffer); gl.deleteProgram(program); }
+        dispose() { gl.deleteTexture(gifts); gl.deleteBuffer(diskBuffer); gl.deleteBuffer(buffer); gl.deleteProgram(program); }
     };
 }
 
 function canvasRenderer(canvas, field) {
     const ctx = canvas.getContext('2d');
+    const disk=makeSpiral(field);
     const gifts = makeGiftAtlas();
     const sphere=new Float32Array(field.length/STRIDE*3);
     let cachedShuffle=NaN;
@@ -551,7 +600,9 @@ function canvasRenderer(canvas, field) {
                     sphere[j+2]=(oz*shuffleY-ox*shuffleX)*norm;
                 }
             }
-            const photoShare=Math.min(1,Math.max(0,weights[1]/Math.max(.00001,1-weights[2])));
+            const photoShare=Math.min(1,Math.max(0,weights[1]/Math.max(.00001,1-weights[2]-weights[3])));
+            const diskBlend=weights[3]*weights[3]*(3-2*weights[3]);
+            const matrix=diskBlend>0 ? diskMatrix(l.disk) : null;
             for (let i=0,j=0;i<field.length;i+=STRIDE,j+=3) {
                 const kind=field[i+10], seed=field[i+12];
                 let x, y, alpha, size=field[i+9]*l.dotScale;
@@ -615,10 +666,19 @@ function canvasRenderer(canvas, field) {
                     }
                     if(ornament) alpha=(spread+(1-spread)*(1-photoShare))*ornamentLight;
                     if(kind===5) size=field[i+9]*l.dotScale*(1-.47*spread)*ornamentSize;
+                    if(diskBlend>0) {
+                        x+=(w/2+matrix[0]*disk[j]+matrix[2]*disk[j+1]-x)*diskBlend;
+                        y+=(l.centerY+matrix[1]*disk[j]+matrix[3]*disk[j+1]-y)*diskBlend;
+                        const core=Math.max(0,1-disk[j+2]/.20);
+                        alpha+=((.68+.30*core)*(.95+.12*Math.sin(time+seed*32))-alpha)*diskBlend;
+                        size+=(field[i+9]*l.dotScale*(ornament ? .58 : .82+.27*core)-size)*diskBlend;
+                        if(!ornament) {tintColumn=0; tintWeight=(.44+.50*core)*diskBlend;}
+                    }
                     if(kind===7) {
                         if(alpha<.01) continue;
                         const z=field[i]*si+field[i+2]*co;
                         size=Math.max(23,field[i+9]*l.dotScale)*(1+.12*z)*(1-.38*spread)*ornamentSize;
+                        size+=(field[i+9]*l.dotScale*.58-size)*diskBlend;
                         ctx.globalAlpha=alpha*(.88+.12*z);
                         ctx.drawImage(gifts,colorColumn*GIFT_CELL,0,GIFT_CELL,GIFT_CELL,x-size/2,y-size/2,size,size);
                         continue;
@@ -660,7 +720,7 @@ function mountScene(canvas) {
     }
     painter = createPainter();
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
-    const weights = new Float32Array([1,0,0]);
+    const weights = new Float32Array([1,0,0,0]);
     const startWeights = new Float32Array(weights);
     let target=0, start=0, elapsed=0, previous=0, request=0, lost=false, stopped=false;
     let duration=440, scattering=false, shuffle=0;
@@ -683,7 +743,7 @@ function mountScene(canvas) {
         const progress=motion.matches ? 1 : Math.min(1,Math.max(0,(now-start)/duration));
         // Starts moving on the first frame and still lands softly into its final pose.
         const ease=scattering ? progress : 1-(1-progress)**3;
-        for(let i=0;i<3;i++) weights[i]=startWeights[i]+((i===target?1:0)-startWeights[i])*ease;
+        for(let i=0;i<weights.length;i++) weights[i]=startWeights[i]+((i===target?1:0)-startWeights[i])*ease;
         return progress;
     }
     function draw(now) {
@@ -706,6 +766,7 @@ function mountScene(canvas) {
         } else { yawSpeed=0; pitchSpeed=0; }
         previous=now;
         updateWeights(now);
+        size.disk.angle=elapsed*DISK_SPEED;
         const angle = elapsed * SKY_SPEED + handYaw*.14;
         const skyRadius = Math.hypot(width,height) * .51;
         painter.draw(width,height,ratio,size,weights,elapsed,Math.cos(angle)*skyRadius,Math.sin(angle)*skyRadius,
@@ -756,13 +817,15 @@ function mountScene(canvas) {
             rotation.pitch=-.14+handPitch;
             return rotation;
         },
+        getDisk() { return size.disk; },
         setMode(mode) {
             if (!Object.hasOwn(MODES,mode) || MODES[mode]===target) return;
             const now=performance.now();
             updateWeights(now); startWeights.set(weights); start=now; target=MODES[mode];
             // A new seed is safe only before any item has left its source pose.
             if(mode==='galaxy' && weights[2]===0) shuffle=Math.random()*TAU;
-            const distance=Math.abs((mode==='galaxy'?1:0)-weights[2]);
+            const distance=Math.max(Math.abs((mode==='galaxy'?1:0)-weights[2]),
+                Math.abs((mode==='spiral'?1:0)-weights[3]));
             scattering=distance>.00001;
             duration=scattering ? Math.max(180,1150*distance) : 440;
             wake();
@@ -784,8 +847,7 @@ const el = id => document.getElementById(id);
 const stage = el('stage');
 const scene = mountScene(el('stars'));
 const camera = el('video'), sketch = el('skeleton'), pen = sketch.getContext('2d');
-const photos = Array.from({length:12}, (_, index) =>
-  new URL(`./assets/yyj/${index + 1}.jpg`, document.baseURI).href);
+const photos = [{"src": "./assets/yyj/1.jpg?v=3ba51d1c34d1", "width": 450, "height": 800}, {"src": "./assets/yyj/2.jpg?v=aee644cbd06f", "width": 1440, "height": 1440}, {"src": "./assets/yyj/3.jpg?v=ddd615fe3116", "width": 600, "height": 800}, {"src": "./assets/yyj/4.jpg?v=82705560e796", "width": 1080, "height": 1440}, {"src": "./assets/yyj/5.jpg?v=bd06fe6a2e16", "width": 450, "height": 800}, {"src": "./assets/yyj/6.jpg?v=e6e54ac34ba9", "width": 810, "height": 1080}, {"src": "./assets/yyj/7.jpg?v=1031318c499d", "width": 450, "height": 800}, {"src": "./assets/yyj/8.jpg?v=e749c947c32b", "width": 600, "height": 800}, {"src": "./assets/yyj/9.jpg?v=e059c6a34919", "width": 600, "height": 800}, {"src": "./assets/yyj/10.jpg?v=7ae5240a2359", "width": 600, "height": 800}, {"src": "./assets/yyj/11.jpg?v=fe1548cd9eaf", "width": 800, "height": 450}, {"src": "./assets/yyj/12.jpg?v=b8680c0c102a", "width": 1080, "height": 810}, {"src": "./assets/yyj/13.jpg?v=79548118c199", "width": 1600, "height": 2312}, {"src": "./assets/yyj/14.jpg?v=a8f697b7ee60", "width": 1369, "height": 2436}, {"src": "./assets/yyj/15.jpg?v=d71610417442", "width": 1080, "height": 1440}, {"src": "./assets/yyj/16.jpg?v=5e0026b5a014", "width": 600, "height": 800}, {"src": "./assets/yyj/17.jpg?v=dd17a5c3a313", "width": 600, "height": 800}, {"src": "./assets/yyj/18.jpg?v=c36d88f28eba", "width": 600, "height": 800}, {"src": "./assets/yyj/19.gif?v=a1f2cd03949b", "width": 240, "height": 240}, {"src": "./assets/yyj/20.jpg?v=81c555c82af5", "width": 600, "height": 800}, {"src": "./assets/yyj/21.jpg?v=ef8c8a2dc184", "width": 600, "height": 800}, {"src": "./assets/yyj/22.jpg?v=81dab7cfac6b", "width": 450, "height": 800}, {"src": "./assets/yyj/23.png?v=4ef78d175a74", "width": 1200, "height": 1599}, {"src": "./assets/yyj/24.jpg?v=b79d4cdc7603", "width": 450, "height": 800}, {"src": "./assets/yyj/25.jpg?v=aada19b8e800", "width": 800, "height": 600}];
 let session = null, cameraOn = false, toastTimer;
 let remainingPhotos = [], lastPhoto = null;
 
@@ -798,7 +860,7 @@ function shuffle(items) {
 }
 function drawPhoto() {
   if (!remainingPhotos.length) {
-    remainingPhotos = shuffle(photos.map((_, index) => index + 1));
+    remainingPhotos = shuffle([...photos]);
     const first = remainingPhotos.length - 1;
     if (remainingPhotos[first] === lastPhoto && first > 0) {
       const j = Math.floor(Math.random() * first);
@@ -820,25 +882,30 @@ function hint(message) {
 const wall = el('wall'), motion = matchMedia('(prefers-reduced-motion: reduce)');
 const circle = Math.PI * 2;
 let positions = [], orbitFrame = 0, lastFrame = 0;
-let cx = 0, cy = 0, radius = 0, cardSize = 0, wallWidth = 0, wallHeight = 0;
+let cx = 0, cy = 0, cardSize = 0, wallWidth = 0, wallHeight = 0;
 
 function arrangeAlbum() {
   if (!wall.childElementCount) {
-    for (const [index, url] of photos.entries()) {
+    for (const photo of photos) {
       const card = document.createElement('div'), img = new Image();
       card.className = 'galaxy-card';
-      img.src = url;
-      img.alt = `星球相册，第 ${index + 1} 张照片`;
+      const ratio = photo.width/photo.height;
+      card.style.aspectRatio = String(ratio);
+      card.style.setProperty('--width-factor', String(Math.sqrt(ratio)));
+      img.src = photo.src;
+      img.alt = '银河相册照片';
       card.append(img);
       wall.append(card);
     }
   }
-  const phase = Math.random() * circle;
-  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
   positions = shuffle(Array.from(wall.children)).map((card, i) => {
-    const y = 1 - 2*(i+.5)/photos.length, ring = Math.sqrt(1-y*y);
-    const angle = phase + i*goldenAngle;
-    return {card, x:ring*Math.cos(angle), y, z:ring*Math.sin(angle)};
+    const widthFactor = Number(card.style.getPropertyValue('--width-factor'));
+    if (i === 0) return {card, widthFactor, radius:0, angle:0};
+    const arm = (i-1)%3;
+    const steps = Math.ceil((photos.length-1-arm)/3);
+    const radius = .22 + .75*Math.floor((i-1)/3)/Math.max(1,steps-1);
+    const angle = arm*circle/3 + 2.9*radius + (Math.random()-.5)*.10;
+    return {card, widthFactor, radius, angle};
   });
   sizeAlbum();
 }
@@ -848,33 +915,34 @@ function sizeAlbum() {
   const rect = wall.getBoundingClientRect();
   wallWidth = rect.width; wallHeight = rect.height;
   cx = stage.clientWidth * .5 - rect.left; cy = stage.clientHeight * .509 - rect.top;
-  radius = Math.min(stage.clientWidth*.425, stage.clientHeight*.365);
-  cardSize = Math.min(140, radius*.31, wallWidth*.18, wallHeight*.18);
+  const {radiusX, radiusY} = scene.getDisk();
+  cardSize = Math.min(140, 1.28*Math.sqrt(radiusX*radiusY/photos.length), wallWidth*.16, wallHeight*.16);
   wall.style.setProperty('--card-size', cardSize + 'px');
   drawAlbum(1);
 }
 
 function drawAlbum(blend) {
-  const {yaw,pitch} = scene.getRotation();
-  const c = Math.cos(yaw), s = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const disk = scene.getDisk();
+  const c = Math.cos(disk.tilt), s = Math.sin(disk.tilt);
   for (const p of positions) {
-    const x = p.x*c + p.z*s, z = p.z*c - p.x*s;
-    const y = p.y*cp + z*sp, depth = z*cp - p.y*sp;
-    const scale = radius / (1-.18*depth);
-    const tx = cx + x*scale, ty = cy + y*scale;
+    const theta = disk.angle + p.angle;
+    const depth = p.radius*Math.sin(theta);
+    const x = p.radius*Math.cos(theta)*disk.radiusX, y = depth*disk.radiusY;
+    const tx = cx + x*c-y*s, ty = cy + x*s+y*c;
     p.left = Number.isFinite(p.left) ? p.left + blend*(tx-p.left) : tx;
     p.top = Number.isFinite(p.top) ? p.top + blend*(ty-p.top) : ty;
     p.scale = .89+.14*depth;
+    p.hw = cardSize*p.widthFactor*p.scale/2;
+    p.hh = cardSize/p.widthFactor*p.scale/2;
     p.card.style.zIndex = String(Math.round(100+depth*90));
   }
-  // When two surface locations line up in the camera, separate their frames in screen space.
+  // Keep neighbouring photos legible as the arms overlap in projection.
   for (let pass = 0; pass < 5; pass++) {
     for (let i = 0; i < positions.length; i++) {
       const a = positions[i];
       for (let j = i+1; j < positions.length; j++) {
         const b = positions[j], dx = b.left-a.left, dy = b.top-a.top;
-        const halfWidths = cardSize*(a.scale+b.scale)/2;
-        const overlapX = halfWidths + 4 - Math.abs(dx), overlapY = halfWidths/.83 + 4 - Math.abs(dy);
+        const overlapX = a.hw+b.hw+4-Math.abs(dx), overlapY = a.hh+b.hh+4-Math.abs(dy);
         if (overlapX <= 0 || overlapY <= 0) continue;
         if (overlapX < overlapY) {
           const shift = (dx < 0 ? -1 : 1)*overlapX/2;
@@ -886,9 +954,8 @@ function drawAlbum(blend) {
       }
     }
     for (const p of positions) {
-      const hw = cardSize*p.scale*.5, hh = hw/.83;
-      p.left = Math.max(hw, Math.min(wallWidth-hw, p.left));
-      p.top = Math.max(hh, Math.min(wallHeight-hh, p.top));
+      p.left = Math.max(p.hw, Math.min(wallWidth-p.hw, p.left));
+      p.top = Math.max(p.hh, Math.min(wallHeight-p.hh, p.top));
     }
   }
   for (const p of positions) {
@@ -913,28 +980,26 @@ document.addEventListener('visibilitychange', syncAlbumAnimation);
 function showMode(mode) {
   const changed = stage.dataset.mode !== mode;
   stage.dataset.mode = mode;
-  scene.setMode(mode === 'all' ? 'galaxy' : mode);
+  scene.setMode(mode === 'all' ? 'spiral' : mode);
   el('spotlight').hidden = mode !== 'photo';
   wall.hidden = mode !== 'all';
   if (changed && mode === 'all') arrangeAlbum();
   if (changed) syncAlbumAnimation();
   let label;
   if (mode === 'photo') {
-    const number = drawPhoto();
-    el('focus-photo').src = photos[number - 1];
-    el('focus-photo').alt = `第 ${number} 张照片`;
-    el('photo-count').textContent = `第 ${number} 张照片`;
+    el('focus-photo').src = drawPhoto().src;
     label = 'OK · 一张回忆正在发光';
   } else if (mode === 'all') {
-    label = `十指张开 · ${photos.length} 张照片环绕星球`;
+    label = '十指张开 · 银河相册';
   } else if (mode === 'galaxy') {
     label = '星光成球 · 移动手掌拨动';
   } else {
     label = '星光聚成树';
   }
   el('mode-label').textContent = label;
-  if (changed) el('stars').setAttribute('aria-label', mode === 'tree' ? '挂着礼盒的金色圣诞树'
-    : mode === 'photo' ? '绕着照片转动的星光' : '由树上星点和礼盒组成的立体星球，可用单手拨动');
+  const descriptions = {tree:'挂着礼盒的金色圣诞树', photo:'绕着照片转动的星光',
+    galaxy:'由树上星点和礼盒组成的立体星球，可用单手拨动', all:'沿银河旋臂流动的星光与相册'};
+  if (changed) el('stars').setAttribute('aria-label', descriptions[mode]);
   document.querySelectorAll('.tools [data-mode]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.mode === mode)));
 }
@@ -1100,9 +1165,9 @@ window.addEventListener('keydown', event => {
 const previews = [];
 async function preloadAlbum() {
   if (navigator.connection?.saveData) return;
-  for (const url of photos) {
+  for (const photo of photos) {
     const img = new Image();
-    img.src = url;
+    img.src = photo.src;
     try { await img.decode(); previews.push(img); } catch {}
   }
 }
