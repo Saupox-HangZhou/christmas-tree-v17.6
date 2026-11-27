@@ -1,3 +1,15 @@
+# 圣诞 · 星光许愿树
+
+[打开互动网页](https://saupox-hangzhou.github.io/christmas-tree-v17.6/)
+
+点击「开启手势」并允许摄像头，握拳把星光聚成树，伸出一到四指抽一张照片，张开五指让照片围成爱心。也可以用底部按钮或数字键 0–5 操作，空格换照片，F 全屏。
+
+在「我的设置」中可更换标题、添加自己的照片或音乐。添加的媒体保存在当前浏览器。初始相册包含 12 张[黄石国家公园冬季照片](assets/photos/CREDITS.md)。手势模型与运行库随站点加载，视频帧在浏览器内处理。[模型和运行库来源](assets/vision/SOURCES.md)
+
+[经典版](https://saupox-hangzhou.github.io/christmas-tree-v17.6/classic.html) 保留原版操作。以下为上游 V17.6 教程的实现记录。
+
+---
+
 # Grand Luxury Tree v17.6.5 · 飞书文档代码抓取与运行记录
 
 - 仓库：https://github.com/Hwescon/christmas-tree-v17.6
